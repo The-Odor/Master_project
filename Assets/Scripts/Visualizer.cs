@@ -8,7 +8,6 @@ public class Visualizer : MonoBehaviour
 {
     public Material robot_material;
     public Mesh robot_mesh;
-    public float penis;
 
     // Start is called before the first frame update
     void OnEnable()
