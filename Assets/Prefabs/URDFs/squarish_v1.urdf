@@ -1,0 +1,244 @@
+<?xml version="1.0" ?>
+<robot name="squarish_v1">
+    <link name="squarish_v1_root">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="-0.002254789272030651 2.7613204647441273e-19 0.0"/>
+            <mass value="2.610000e-01"/>
+            <inertia ixx="2.435999e-04" ixy="0.000000e+00" ixz="0.000000e+00" iyy="2.714798e-04" iyz="-2.844428e-22" izz="3.630714e-04"/>
+        </inertial>
+        <collision name="squarish_v1_root_geom0">
+            <geometry>
+                <box size="0.089 0.089 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_geom1">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="0.0 0.0 3.141592653589793" xyz="-0.0535 6.551860375438339e-18 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="squarish_v1_root_joint0">
+        <parent link="squarish_v1_root"/>
+        <child link="squarish_v1_root_link0"/>
+        <origin rpy="0.0 0.0 3.141592653589793" xyz="-0.07902499999999998 9.677771330261958e-18 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="squarish_v1_root_link0">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.05109782211538461 0.0034221105769230765 0.0"/>
+            <mass value="1.300000e-01"/>
+            <inertia ixx="6.279003e-05" ixy="1.393908e-37" ixz="-5.057991e-22" iyy="1.986327e-04" iyz="9.933154e-24" izz="2.289137e-04"/>
+        </inertial>
+        <collision name="squarish_v1_root_link0_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000002 3.851859888774472e-34 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815 0.0 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.080593125 0.0 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.12103625 3.0814879110195774e-33 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_geom4">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948963 0.0 1.5707963267948963" xyz="0.080593125 0.040443125 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="squarish_v1_root_link0_joint1">
+        <parent link="squarish_v1_root_link0"/>
+        <child link="squarish_v1_root_link0_link1"/>
+        <origin rpy="0.0 0.0 0.0" xyz="0.14656125 3.0814879110195774e-33 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="squarish_v1_root_link0_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.025730769230769248 7.703719777548943e-34 0.0"/>
+            <mass value="7.800000e-02"/>
+            <inertia ixx="2.396696e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="3.656843e-05" iyz="0.000000e+00" izz="4.730539e-05"/>
+        </inertial>
+        <collision name="squarish_v1_root_link0_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 7.703719777548943e-34 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="squarish_v1_root_link0_joint2">
+        <parent link="squarish_v1_root_link0"/>
+        <child link="squarish_v1_root_link0_link2"/>
+        <origin rpy="1.5707963267948963 2.220446049250313e-16 1.5707963267948963" xyz="0.08059312500000002 0.065968125 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="squarish_v1_root_link0_link2">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.05556819078947366 5.204170427930421e-18 -0.025770222953216366"/>
+            <mass value="1.710000e-01"/>
+            <inertia ixx="2.807717e-04" ixy="1.198385e-21" ixz="6.644903e-22" iyy="4.516425e-04" iyz="1.272211e-36" izz="2.560152e-04"/>
+        </inertial>
+        <collision name="squarish_v1_root_link0_link2_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018 0.0 -6.938893903907228e-18"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815 3.469446951953614e-18 -6.938893903907228e-18"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.08059312499999997 0.0 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_geom3">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 1.5707963267948966 0.0" xyz="0.08059312499999997 4.336808689942018e-18 -0.06288624999999998"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_geom4">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 1.5707963267948966 0.0" xyz="0.08059312499999999 1.5612511283791264e-17 -0.10332937499999999"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_geom5">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="3.141592653589793 4.440892098500626e-16 3.141592653589793" xyz="0.04014999999999999 1.8214596497756474e-17 -0.06288625"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_geom6">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="0.0 -2.220446049250313e-16 0.0" xyz="0.12103624999999997 3.469446951953614e-18 -0.06288624999999999"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="squarish_v1_root_link0_link2_joint1">
+        <parent link="squarish_v1_root_link0_link2"/>
+        <child link="squarish_v1_root_link0_link2_link1"/>
+        <origin rpy="-1.5707963267948963 1.5707963267948961 0.0" xyz="0.08059312499999997 2.949029909160572e-17 -0.12885437499999994"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="squarish_v1_root_link0_link2_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.025730769230769248 8.992806499463776e-18 -9.992007221626418e-19"/>
+            <mass value="7.800000e-02"/>
+            <inertia ixx="2.396696e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="3.656843e-05" iyz="0.000000e+00" izz="4.730539e-05"/>
+        </inertial>
+        <collision name="squarish_v1_root_link0_link2_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 8.992806499463776e-18 -9.992007221626418e-19"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 8.992806499463776e-18 -9.992007221626416e-19"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="squarish_v1_root_link0_link2_joint2">
+        <parent link="squarish_v1_root_link0_link2"/>
+        <child link="squarish_v1_root_link0_link2_link2"/>
+        <origin rpy="3.141592653589793 4.440892098500626e-16 3.141592653589793" xyz="0.014624999999999997 8.673617379884035e-18 -0.06288625"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="squarish_v1_root_link0_link2_link2">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.025730769230769238 0.0 1.5612511283791264e-17"/>
+            <mass value="7.800000e-02"/>
+            <inertia ixx="2.396696e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="3.656843e-05" iyz="0.000000e+00" izz="4.730539e-05"/>
+        </inertial>
+        <collision name="squarish_v1_root_link0_link2_link2_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000002 0.0 1.734723475976807e-17"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_link2_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815 0.0 1.3877787807814457e-17"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="squarish_v1_root_link0_link2_joint3">
+        <parent link="squarish_v1_root_link0_link2"/>
+        <child link="squarish_v1_root_link0_link2_link3"/>
+        <origin rpy="0.0 -2.220446049250313e-16 0.0" xyz="0.14656124999999992 2.42861286636753e-17 -0.06288624999999995"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="squarish_v1_root_link0_link2_link3">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04389162946428572 -8.673617379884035e-19 -0.022459375"/>
+            <mass value="1.680000e-01"/>
+            <inertia ixx="2.342319e-04" ixy="1.768532e-22" ixz="-7.325500e-23" iyy="3.731518e-04" iyz="1.342822e-36" izz="2.329441e-04"/>
+        </inertial>
+        <collision name="squarish_v1_root_link0_link2_link3_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 -3.469446951953614e-18 3.469446951953614e-18"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_link3_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 -3.469446951953614e-18 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_link3_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.08059312500000002 0.0 0.0"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_link3_geom3">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 1.5707963267948966 0.0" xyz="0.08059312500000002 8.673617379884035e-19 -0.06288625000000002"/>
+        </collision>
+        <collision name="squarish_v1_root_link0_link2_link3_geom4">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 4.440892098500626e-16 3.141592653589793" xyz="0.01770687500000001 2.2551405187698492e-17 -0.06288625000000003"/>
+        </collision>
+    </link>
+</robot>

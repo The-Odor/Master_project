@@ -1,0 +1,396 @@
+<?xml version="1.0" ?>
+<robot name="babyb_v1">
+    <link name="babyb_v1_root">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.0 3.6877624914472933e-19 -1.8014650840356795e-36"/>
+            <mass value="2.940000e-01"/>
+            <inertia ixx="3.059393e-04" ixy="0.000000e+00" ixz="-9.403955e-38" iyy="3.151404e-04" iyz="1.438786e-23" izz="4.673789e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_geom0">
+            <geometry>
+                <box size="0.089 0.089 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_geom1">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 0.0 0.0" xyz="0.0535 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_geom2">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 0.0 3.141592653589793" xyz="-0.0535 6.551860375438339e-18 -4.81482486096809e-35"/>
+        </collision>
+        <collision name="babyb_v1_root_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948963 0.0 1.5707963267948963" xyz="1.214306433183765e-17 0.0535 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_geom4">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 0.0 -1.5707963267948966" xyz="-1.214306433183765e-17 -0.0535 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_joint0">
+        <parent link="babyb_v1_root"/>
+        <child link="babyb_v1_root_link0"/>
+        <origin rpy="1.5707963267948966 0.0 0.0" xyz="0.07902499999999998 0.0 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link0">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.0483713655462185 0.0 0.0"/>
+            <mass value="1.190000e-01"/>
+            <inertia ixx="4.349315e-05" ixy="-5.057991e-22" ixz="0.000000e+00" iyy="1.875844e-04" iyz="0.000000e+00" izz="1.991625e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link0_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link0_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link0_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.08059312500000002 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link0_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.12103625000000001 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_link0_joint1">
+        <parent link="babyb_v1_root_link0"/>
+        <child link="babyb_v1_root_link0_link1"/>
+        <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.14656125 0.0 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link0_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.0483713655462185 0.0 0.0"/>
+            <mass value="1.190000e-01"/>
+            <inertia ixx="4.349315e-05" ixy="5.057991e-22" ixz="0.000000e+00" iyy="1.875844e-04" iyz="0.000000e+00" izz="1.991625e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link0_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link0_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link0_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.08059312500000002 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link0_link1_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 0.0 0.0" xyz="0.12103625000000001 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_link0_link1_joint1">
+        <parent link="babyb_v1_root_link0_link1"/>
+        <child link="babyb_v1_root_link0_link1_link1"/>
+        <origin rpy="1.5707963267948966 0.0 0.0" xyz="0.14656124999999998 0.0 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link0_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.040970312500000015 0.0 0.0"/>
+            <mass value="1.080000e-01"/>
+            <inertia ixx="4.294389e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="1.207594e-04" iyz="0.000000e+00" izz="1.322928e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link0_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link0_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link0_link1_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.08059312500000002 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_joint1">
+        <parent link="babyb_v1_root"/>
+        <child link="babyb_v1_root_link1"/>
+        <origin rpy="1.5707963267948966 0.0 3.141592653589793" xyz="-0.07902499999999998 9.677771330261958e-18 -1.925929944387236e-34"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link1">
+        <inertial>
+            <origin rpy="3.749399456654644e-33 0.0 0.0" xyz="0.040970312500000015 -1.925929944387236e-34 -1.7333369499485123e-33"/>
+            <mass value="1.080000e-01"/>
+            <inertia ixx="4.294389e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="1.207594e-04" iyz="0.000000e+00" izz="1.322928e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="3.749399456654644e-33 0.0 0.0" xyz="0.018000000000000016 9.62964972193618e-35 -2.311115933264683e-33"/>
+        </collision>
+        <collision name="babyb_v1_root_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="3.749399456654644e-33 0.0 0.0" xyz="0.04815000000000001 -5.7777898331617076e-34 -2.1185229388259594e-33"/>
+        </collision>
+        <collision name="babyb_v1_root_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.08059312500000002 -7.703719777548943e-34 -1.925929944387236e-33"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_joint2">
+        <parent link="babyb_v1_root"/>
+        <child link="babyb_v1_root_link2"/>
+        <origin rpy="1.5707963267948963 0.0 1.5707963267948963" xyz="1.734723475976807e-17 0.07902499999999998 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link2">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04837136554621849 -1.734723475976807e-18 -1.734723475976807e-18"/>
+            <mass value="1.190000e-01"/>
+            <inertia ixx="4.349315e-05" ixy="-5.057991e-22" ixz="0.000000e+00" iyy="1.875844e-04" iyz="0.000000e+00" izz="1.991625e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link2_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000002 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link2_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815 -1.734723475976807e-18 -1.734723475976807e-18"/>
+        </collision>
+        <collision name="babyb_v1_root_link2_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.080593125 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link2_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.12103625 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_link2_joint1">
+        <parent link="babyb_v1_root_link2"/>
+        <child link="babyb_v1_root_link2_link1"/>
+        <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.14656125 0.0 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link2_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.0483713655462185 0.0 0.0"/>
+            <mass value="1.190000e-01"/>
+            <inertia ixx="4.349315e-05" ixy="5.057991e-22" ixz="0.000000e+00" iyy="1.875844e-04" iyz="0.000000e+00" izz="1.991625e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link2_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 3.469446951953614e-18 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link2_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link2_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.08059312500000002 6.938893903907228e-18 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link2_link1_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 0.0 0.0" xyz="0.12103625000000001 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_link2_link1_joint1">
+        <parent link="babyb_v1_root_link2_link1"/>
+        <child link="babyb_v1_root_link2_link1_link1"/>
+        <origin rpy="1.5707963267948966 0.0 0.0" xyz="0.14656124999999998 0.0 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link2_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.040970312500000015 -1.734723475976807e-18 -5.204170427930421e-18"/>
+            <mass value="1.080000e-01"/>
+            <inertia ixx="4.294389e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="1.207594e-04" iyz="0.000000e+00" izz="1.322928e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link2_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 0.0 -3.469446951953614e-18"/>
+        </collision>
+        <collision name="babyb_v1_root_link2_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 -6.938893903907228e-18"/>
+        </collision>
+        <collision name="babyb_v1_root_link2_link1_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.08059312500000002 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_joint3">
+        <parent link="babyb_v1_root"/>
+        <child link="babyb_v1_root_link3"/>
+        <origin rpy="1.5707963267948966 0.0 -1.5707963267948966" xyz="-1.734723475976807e-17 -0.07902499999999998 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link3">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04837136554621849 -1.734723475976807e-18 -1.734723475976807e-18"/>
+            <mass value="1.190000e-01"/>
+            <inertia ixx="4.349315e-05" ixy="-5.057991e-22" ixz="0.000000e+00" iyy="1.875844e-04" iyz="0.000000e+00" izz="1.991625e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link3_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000002 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link3_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815 -1.734723475976807e-18 -1.734723475976807e-18"/>
+        </collision>
+        <collision name="babyb_v1_root_link3_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.080593125 0.0 0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link3_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.12103625 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_link3_joint1">
+        <parent link="babyb_v1_root_link3"/>
+        <child link="babyb_v1_root_link3_link1"/>
+        <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.14656125 0.0 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link3_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.0483713655462185 0.0 -0.0"/>
+            <mass value="1.190000e-01"/>
+            <inertia ixx="4.349315e-05" ixy="5.057991e-22" ixz="0.000000e+00" iyy="1.875844e-04" iyz="0.000000e+00" izz="1.991625e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link3_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 3.469446951953614e-18 -0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link3_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 -0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link3_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.08059312500000002 6.938893903907228e-18 -0.0"/>
+        </collision>
+        <collision name="babyb_v1_root_link3_link1_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 0.0 0.0" xyz="0.12103625000000001 0.0 -0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="babyb_v1_root_link3_link1_joint1">
+        <parent link="babyb_v1_root_link3_link1"/>
+        <child link="babyb_v1_root_link3_link1_link1"/>
+        <origin rpy="1.5707963267948966 0.0 0.0" xyz="0.14656124999999998 0.0 -0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="babyb_v1_root_link3_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.040970312500000015 -1.734723475976807e-18 -5.204170427930421e-18"/>
+            <mass value="1.080000e-01"/>
+            <inertia ixx="4.294389e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="1.207594e-04" iyz="0.000000e+00" izz="1.322928e-04"/>
+        </inertial>
+        <collision name="babyb_v1_root_link3_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 0.0 -3.469446951953614e-18"/>
+        </collision>
+        <collision name="babyb_v1_root_link3_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 -6.938893903907228e-18"/>
+        </collision>
+        <collision name="babyb_v1_root_link3_link1_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.08059312500000002 0.0 0.0"/>
+        </collision>
+    </link>
+</robot>

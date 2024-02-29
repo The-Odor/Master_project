@@ -1,0 +1,360 @@
+<?xml version="1.0" ?>
+<robot name="ww_v1">
+    <link name="ww_v1_root">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="-0.0021636029411764707 -0.00216360294117647 0.0"/>
+            <mass value="2.720000e-01"/>
+            <inertia ixx="2.743606e-04" ixy="-1.393908e-37" ixz="5.057991e-22" iyy="2.744054e-04" iyz="-2.745096e-22" izz="3.961637e-04"/>
+        </inertial>
+        <collision name="ww_v1_root_geom0">
+            <geometry>
+                <box size="0.089 0.089 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_geom1">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="0.0 0.0 3.141592653589793" xyz="-0.0535 6.551860375438339e-18 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_geom2">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 0.0 -1.5707963267948966" xyz="-1.214306433183765e-17 -0.0535 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_joint0">
+        <parent link="ww_v1_root"/>
+        <child link="ww_v1_root_link0"/>
+        <origin rpy="0.0 0.0 3.141592653589793" xyz="-0.07902499999999998 9.677771330261958e-18 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link0">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.025730769230769234 7.703719777548943e-34 0.0"/>
+            <mass value="7.800000e-02"/>
+            <inertia ixx="2.396696e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="3.656843e-05" iyz="0.000000e+00" izz="4.730539e-05"/>
+        </inertial>
+        <collision name="ww_v1_root_link0_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000002 3.851859888774472e-34 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link0_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815 0.0 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_joint1">
+        <parent link="ww_v1_root"/>
+        <child link="ww_v1_root_link1"/>
+        <origin rpy="1.5707963267948966 0.0 -1.5707963267948966" xyz="-1.734723475976807e-17 -0.07902499999999998 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.029737640449438205 0.0 0.0"/>
+            <mass value="8.900000e-02"/>
+            <inertia ixx="2.679414e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="4.724987e-05" iyz="0.000000e+00" izz="6.030948e-05"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000002 0.0 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815 -1.734723475976807e-18 -1.734723475976807e-18"/>
+        </collision>
+        <collision name="ww_v1_root_link1_geom2">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.05815 -1.734723475976807e-18 -5.204170427930421e-18"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_link1_joint1">
+        <parent link="ww_v1_root_link1"/>
+        <child link="ww_v1_root_link1_link1"/>
+        <origin rpy="0.0 0.0 0.0" xyz="0.083675 0.0 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.02973764044943819 0.0 -3.469446951953614e-18"/>
+            <mass value="8.900000e-02"/>
+            <inertia ixx="2.451623e-05" ixy="-5.057991e-22" ixz="0.000000e+00" iyy="4.952779e-05" iyz="0.000000e+00" izz="6.030948e-05"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.017999999999999988 0.0 -3.469446951953614e-18"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.048149999999999984 0.0 -6.938893903907228e-18"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_geom2">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.05814999999999998 0.0 -6.938893903907228e-18"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_link1_link1_joint1">
+        <parent link="ww_v1_root_link1_link1"/>
+        <child link="ww_v1_root_link1_link1_link1"/>
+        <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.08367499999999997 0.0 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.044632925420168085 0.003738440126050426 -0.0"/>
+            <mass value="1.190000e-01"/>
+            <inertia ixx="6.210004e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="1.393046e-04" iyz="5.157323e-22" izz="1.648443e-04"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 3.469446951953614e-18 -0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 -0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.08059312500000002 6.938893903907228e-18 -0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="0.0 0.0 1.5707963267948966" xyz="0.080593125 0.04044312500000001 -0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_link1_link1_link1_joint1">
+        <parent link="ww_v1_root_link1_link1_link1"/>
+        <child link="ww_v1_root_link1_link1_link1_link1"/>
+        <origin rpy="0.0 0.0 1.5707963267948966" xyz="0.08059312500000003 0.06596812499999999 -0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1_link1_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.069962328125 6.350475700855896e-17 0.0"/>
+            <mass value="1.600000e-01"/>
+            <inertia ixx="1.012815e-04" ixy="-1.393908e-37" ixz="5.057991e-22" iyy="4.590963e-04" iyz="5.256654e-22" izz="5.050430e-04"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_link1_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 6.350475700855896e-17 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 6.350475700855896e-17 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.08059312500000002 6.350475700855896e-17 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_geom3">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.14347937500000002 6.350475700855896e-17 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_geom4">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="0.0 0.0 1.5707963267948966" xyz="0.08059312500000002 0.04044312500000007 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_geom5">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="1.5707963267948966 0.0 -1.5707963267948966" xyz="0.14347937500000002 -0.040443124999999934 -0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_link1_link1_link1_link1_joint1">
+        <parent link="ww_v1_root_link1_link1_link1_link1"/>
+        <child link="ww_v1_root_link1_link1_link1_link1_link1"/>
+        <origin rpy="0.0 0.0 1.5707963267948966" xyz="0.08059312500000002 0.06596812500000007 0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1_link1_link1_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.02573076923076922 6.938893903907228e-18 0.0"/>
+            <mass value="7.800000e-02"/>
+            <inertia ixx="2.396696e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="3.656843e-05" iyz="0.000000e+00" izz="4.730539e-05"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.017999999999999988 8.673617379884035e-18 0.0"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.048149999999999984 1.734723475976807e-17 0.0"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_link1_link1_link1_link1_joint2">
+        <parent link="ww_v1_root_link1_link1_link1_link1"/>
+        <child link="ww_v1_root_link1_link1_link1_link1_link2"/>
+        <origin rpy="1.5707963267948966 0.0 -1.5707963267948966" xyz="0.14347937500000002 -0.06596812499999993 -0.0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1_link1_link1_link1_link2">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04463292542016808 0.0 -0.003738440126050433"/>
+            <mass value="1.190000e-01"/>
+            <inertia ixx="6.214478e-05" ixy="3.646778e-22" ixz="9.933154e-24" iyy="1.533109e-04" iyz="3.576540e-22" izz="1.507933e-04"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 0.0 -1.0408340855860843e-17"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 0.0 -1.3877787807814457e-17"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_geom2">
+            <geometry>
+                <box size="0.06288625 0.06288625 0.0603"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.08059312500000002 0.0 -1.3877787807814457e-17"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_geom3">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="-1.5700924586837752e-16 1.5707963267948966 0.0" xyz="0.08059312500000002 1.3877787807814457e-17 -0.040443125000000024"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_link1_link1_link1_link1_link2_joint1">
+        <parent link="ww_v1_root_link1_link1_link1_link1_link2"/>
+        <child link="ww_v1_root_link1_link1_link1_link1_link2_link1"/>
+        <origin rpy="-1.570092458683776e-16 1.5707963267948966 0.0" xyz="0.08059312500000002 1.1275702593849246e-17 -0.06596812499999999"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1_link1_link1_link1_link2_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.02973764044943822 7.240777168488504e-21 -1.413083212815399e-17"/>
+            <mass value="8.900000e-02"/>
+            <inertia ixx="2.679414e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="4.724987e-05" iyz="0.000000e+00" izz="6.030948e-05"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 7.240777168487047e-21 -1.4130832128153987e-17"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 7.240777168485121e-21 -1.413083212815399e-17"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_link1_geom2">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.05815000000000002 7.240777168488203e-21 -1.4130832128153993e-17"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_link1_link1_link1_link1_link2_link1_joint1">
+        <parent link="ww_v1_root_link1_link1_link1_link1_link2_link1"/>
+        <child link="ww_v1_root_link1_link1_link1_link1_link2_link1_link1"/>
+        <origin rpy="0.0 0.0 0.0" xyz="0.083675 7.240777168485892e-21 -1.0177592008924613e-17"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1_link1_link1_link1_link2_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.02973764044943822 8.534277066065939e-33 -1.413083212815399e-17"/>
+            <mass value="8.900000e-02"/>
+            <inertia ixx="2.451623e-05" ixy="-5.057991e-22" ixz="0.000000e+00" iyy="4.952779e-05" iyz="0.000000e+00" izz="6.030948e-05"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 7.318533788671496e-33 -1.4130832128153987e-17"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 5.3926038442842604e-33 -1.413083212815399e-17"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_link1_link1_geom2">
+            <geometry>
+                <box size="0.018 0.053 0.0165891"/>
+            </geometry>
+            <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.05815000000000002 7.703719777548943e-33 -1.4130832128153993e-17"/>
+        </collision>
+    </link>
+    <joint type="revolute" name="ww_v1_root_link1_link1_link1_link1_link2_link1_link1_joint1">
+        <parent link="ww_v1_root_link1_link1_link1_link1_link2_link1_link1"/>
+        <child link="ww_v1_root_link1_link1_link1_link1_link2_link1_link1_link1"/>
+        <origin rpy="-1.5707963267948966 0.0 0.0" xyz="0.083675 9.244463733058732e-33 -1.0177592008924608e-17"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.047197551" upper="1.047197551" effort="0.948013269" velocity="6.338968228"/>
+    </joint>
+    <link name="ww_v1_root_link1_link1_link1_link1_link2_link1_link1_link1">
+        <inertial>
+            <origin rpy="0.0 0.0 0.0" xyz="0.025730769230769248 1.413083212815399e-17 5.3926038442842604e-33"/>
+            <mass value="7.800000e-02"/>
+            <inertia ixx="2.396696e-05" ixy="0.000000e+00" ixz="0.000000e+00" iyy="3.656843e-05" iyz="0.000000e+00" izz="4.730539e-05"/>
+        </inertial>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_link1_link1_link1_geom0">
+            <geometry>
+                <box size="0.0583 0.0512 0.02"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.018000000000000016 1.4130832128153987e-17 5.3926038442842604e-33"/>
+        </collision>
+        <collision name="ww_v1_root_link1_link1_link1_link1_link2_link1_link1_link1_geom1">
+            <geometry>
+                <box size="0.002 0.053 0.053"/>
+            </geometry>
+            <origin rpy="0.0 0.0 0.0" xyz="0.04815000000000001 1.4130832128153987e-17 3.0814879110195774e-33"/>
+        </collision>
+    </link>
+</robot>
