@@ -55,6 +55,12 @@ ExportedObj/
 # Generated meta files - general
 *.meta
 
+# Venv
+venv/*
+
+# Results
+results/*
+
 # Unity3D generated file on crash reports
 sysinfo.txt
 
