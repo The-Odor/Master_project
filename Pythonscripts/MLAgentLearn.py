@@ -8,7 +8,7 @@ import torch.nn as nn
 # venv\Scripts\activate
 # python Pythonscripts\MLAgentLearn.py
 
-doNothingBreakPoint = lambda x: x
+doNothingBreakPoint = lambda : 0
 
 # # This is a non-blocking call that only loads the environment.
 # print("Please start environment")
@@ -89,23 +89,25 @@ for i, param in enumerate(parameterGenerator):
     paramList.append(param)
 updatedParam = []
 print(neuralNetwork(torch.Tensor((500e4,1e4))))
+addNNodes = 1
 for i, param in enumerate(paramList):
     if i == 2:
-        updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + np.array((1,0)))+1e-2))
-    elif i == 6:
-        updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + np.array((0,1)))+1e-2))
+        updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + np.array((addNNodes,0)))+1e-2))
+        updatedParam[-1][:param.shape[0], :param.shape[1]] = param[:]
     elif i == 3:
-        updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + 1)+1e-2))
-    elif i == 5:
-        updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + 1)+1e-2))
+        updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + addNNodes)+1e-2))
+        updatedParam[-1][:param.shape[0]] = param[:]
     elif i == 4:
-        neuralNetwork[2].out_features += 1
-        neuralNetwork[4].out_features += 1
+        neuralNetwork[2].out_features += 1 
         neuralNetwork[4].in_features += 1
-        neuralNetwork[6].in_features += 1
-        updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + np.array((1,1)))+1e-2))
+        updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + np.array((0,addNNodes)))+1e-2))
+        updatedParam[-1][:param.shape[0], :param.shape[1]] = param[:]
     else:
         updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape))+1e-2))
+        if len(param.shape)==2:
+            updatedParam[-1][:param.shape[0], :param.shape[1]] = param[:]
+        elif len(param.shape)==1:
+            updatedParam[-1][:param.shape[0]] = param[:]
 for i, j in zip(paramList, updatedParam):
     i.data = j
 print(neuralNetwork(torch.Tensor((500e4,1e4))))
