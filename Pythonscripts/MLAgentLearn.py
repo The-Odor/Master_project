@@ -80,8 +80,8 @@ updatedPreviousWeights.data[0:overlapSizePrevious[0], 0:overlapSizePrevious[1]] 
 previousBiases  = next(x for i,x in enumerate(parameterGenerator) if i==(2*layerIdx)-1) # Finds the incoming biases of the layer
 
 ### TEMPORARY TESTING; CREATING AN EXPLICIT SIZE CHANGE AND SEEING IF I CAN DO IT FOR A SPECIFIC FUCKING LAYER
-layerArgs = ((2,12,nn.ReLU), (12,12,nn.ReLU), (12,12,nn.ReLU), (12,12,nn.ReLU), (12,2,nn.ReLU))
-neuralNetwork = nn.Sequential(*[layerActivation for concatenation in [(nn.Linear(arg[0], arg[1]), arg[2]()) for arg in layerArgs] for layerActivation in concatenation])
+layerArgs = ((2,12,nn.ReLU()), (12,12,nn.ReLU()), (12,2,nn.ReLU()))
+neuralNetwork = nn.Sequential(*[layerActivation for concatenation in [(nn.Linear(arg[0], arg[1]), arg[2]) for arg in layerArgs] for layerActivation in concatenation])
 indicesOfLayersOnly = np.arange(len(neuralNetwork))[[isinstance(element, nn.Linear) for element in neuralNetwork]]
 paramList = []
 parameterGenerator = neuralNetwork.parameters()
@@ -94,6 +94,8 @@ for i, param in enumerate(paramList):
     if i == 2:
         updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + np.array((addNNodes,0)))+1e-2))
         updatedParam[-1][:param.shape[0], :param.shape[1]] = param[:]
+        # updatedParam[-1][:(-max(addNNodes,0)-1),:] = param[:(-min(addNNodes,0)-1),:]
+
     elif i == 3:
         updatedParam.append(torch.Tensor(np.zeros(np.array(param.shape) + addNNodes)+1e-2))
         updatedParam[-1][:param.shape[0]] = param[:]
@@ -114,11 +116,55 @@ print(neuralNetwork(torch.Tensor((500e4,1e4))))
 ### TEMPORARY TESTING; CREATING AN EXPLICIT SIZE CHANGE AND SEEING IF I CAN DO IT FOR A SPECIFIC FUCKING LAYER
 
 
-def addLayer(network, inFeatures, outFeatures, actFunc=nn.ReLU(), bias=True):
-    return nn.Sequential(*network, nn.Linear(inFeatures, outFeatures), actFunc)
+def addLayer(network, layerIdx, actFunc=nn.ReLU(), bias=True):
+    # Layer added is in the form of an identity matrix with bias=0 and should have no effective change immediately upon addition
+    # ASSUMPTION: actFunc(actFunc(x)) = actFunc(x), like for ReLU.
+    layers = [i for i in network]
+    identitySize = network[2*layerIdx-2].out_features
+    newNetwork = nn.Sequential(*(layers[:2*layerIdx] + [nn.Linear(identitySize, identitySize, bias=bias), actFunc] + layers[2*layerIdx:]))
+    parameterGenerator = newNetwork.parameters()
+    next(layer for i,layer in enumerate(parameterGenerator) if i==2*layerIdx).data = torch.Tensor(np.identity(identitySize))
+    next(parameterGenerator).data = torch.Tensor(np.zeros(identitySize))
+    return newNetwork
+
+    # return nn.Sequential(*network, nn.Linear(inFeatures, outFeatures), actFunc)
 
 def addNode(network, layerIdx, addNNodes):
-    pass
+    # TODO: Add checks like refusing to go to 0 or negative nodes
+    # Added node(s) has weights and biases of 0 and should have no effective change immediately upon addition
+    network[layerIdx*2-2].out_features += addNNodes
+    network[layerIdx*2].in_features += addNNodes
+    for i, parameters in enumerate(network.parameters()):
+        if i == layerIdx*2:
+            # Increase number of output weights in previous layer
+            updatedParameters = torch.Tensor(np.zeros(np.array(parameters.shape) + np.array((addNNodes,0)))) # .shape is annoyingly ordered as (output,input)
+            overlapShape = (min(parameters.shape[0], updatedParameters.shape[0]), min(parameters.shape[1], updatedParameters.shape[1])) # Finds overlap between old and new matrices
+            updatedParameters.data[:overlapShape[0],:overlapShape[1]] = parameters[:overlapShape[0],:overlapShape[1]]
+            parameters.data = updatedParameters
+            # Fault: slicing with [:0] apparently just give you an empty iterative :((
+            # parameters.data[:(-min(addNNodes,0)),:] = updatedParameters[:(-max(addNNodes,0)),:
+        elif i == layerIdx*2+1:
+            # Increase number of biases in relevant layer
+            updatedParameters = torch.Tensor(np.zeros(np.array(parameters.shape) + addNNodes))
+            overlapShape = min(parameters.shape[0], updatedParameters.shape[0])
+            updatedParameters[:overlapShape] = parameters[:overlapShape]
+            parameters.data = updatedParameters
+        elif i == layerIdx*2+2:
+            # Increase number if input weights in following layer
+            updatedParameters = torch.Tensor(np.zeros(np.array(parameters.shape) + np.array((0,addNNodes)))) # .shape is annoyingly ordered as (output,input)
+            overlapShape = (min(parameters.shape[0], updatedParameters.shape[0]), min(parameters.shape[1], updatedParameters.shape[1])) # Finds overlap between old and new matrices
+            updatedParameters.data[:overlapShape[0],:overlapShape[1]] = parameters[:overlapShape[0],:overlapShape[1]]
+            parameters.data = updatedParameters
+
+layerArgs = ((2,12,nn.ReLU()), (12,13,nn.ReLU()), (13,2,nn.ReLU()))
+neuralNetwork = nn.Sequential(*[layerActivation for concatenation in [(nn.Linear(arg[0], arg[1]), arg[2]) for arg in layerArgs] for layerActivation in concatenation])
+
+inputTensor = torch.Tensor((2,2))
+print(neuralNetwork, "output: ", neuralNetwork(inputTensor))
+neuralNetwork = addLayer(neuralNetwork, 2)
+# print(neuralNetwork(inputTensor))
+addNode(neuralNetwork, 2, 2)
+print(neuralNetwork, "output: ",  neuralNetwork(inputTensor))
 
 # 
 # TODO: Consider making the following paragraph a version of the previous one using a loop, so you don't have to copypaste all the time.
