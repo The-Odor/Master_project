@@ -4,13 +4,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 # import torch.optim as optim # May be necessary, haven't used it yet
+import pdb
+import neat
+import multiprocessing
 
 # cd Master_project
 # venv\Scripts\activate
 # python Pythonscripts\MLAgentLearn.py
 
 doNothingBreakPoint = lambda : 0
-
+import random
+random.seed(69420)
 
 def addLayer(network, layerIdx, actFunc=nn.ReLU(), bias=True):
     # Layer added is in the form of an identity matrix with bias=0 and should have no effective change immediately upon addition
@@ -66,6 +70,79 @@ def addNode(network, layerIdx, addNNodes):
 
 
 
+def fitnessFunc(genome,config):
+    # pdb.set_trace()
+    # networks = [(gen[0], gen[1], neat.nn.FeedForwardNetwork.create(gen[1], config)) for gen in genomes]
+    # for genID, gen, net in networks:
+    #     gen.fitness = ((net.activate((1,1)) - np.arange(12))**2).sum() + len(gen.nodes) + len(gen.connections)
+
+    genID, gen = genome 
+    network = neat.nn.FeedForwardNetwork.create(gen, config)
+    return -(((network.activate((1,1)) - (np.arange(2)+100))**2).sum())# + len(gen.nodes) + len(gen.connections))
+
+        
+
+def evaluatePopulation(genomes, config, numWorkers=12):
+    processingVersion = 1
+
+    # 1: serial
+    # 2: list-based
+    # 3: starmap
+
+    match processingVersion:
+        case 1:
+            print(f"Using serial processing")
+            for genome in genomes:
+                genome[1].fitness = fitnessFunc(genome,config)
+
+        case 2:
+            print(f"Using list")
+            with multiprocessing.Pool(numWorkers) as pool:
+                jobs = [pool.apply_async(fitnessFunc, (genome,config)) for genome in genomes]
+                
+                for job, (genID, genome) in zip(jobs, genomes):
+                    genome.fitness = job.get(timeout=None)
+            
+        case 3:
+            print(f"Using starmap")
+            with multiprocessing.Pool(numWorkers) as pool:
+                for genome, fitness in zip(genomes, pool.starmap(fitnessFunc, [(genome, config) for genome in genomes])):
+                    genome[1].fitness = fitness
+
+
+def run():
+    filepath = r"C:\Users\theod\Master_project\Pythonscripts\configs\NEATconfig"
+    config = neat.Config(neat.DefaultGenome,neat.DefaultReproduction,neat.DefaultSpeciesSet,neat.DefaultStagnation, filepath)
+    pop = neat.Population(config)
+    pop.add_reporter(neat.StdOutReporter(False))
+    bestBoi = pop.run(evaluatePopulation, 100)
+    network = neat.nn.FeedForwardNetwork.create(bestBoi, config)
+
+    print('\nOutput:')
+    networkInputs  = ((1,1),)
+    networkOutputs = ((np.arange(2)+100),)
+    for xi, xo in zip(networkInputs, networkOutputs):
+        output = network.activate(xi)
+        print("  input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
+
+    # pdb.set_trace()
+
+
+def func1(x):
+    return x**2
+def func2(x,y):
+    return x*y
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    
+    run()    
+
+
+    # pool = multiprocessing.Pool(4)
+    # print(pool.map(func1, range(5)))
+    # print(pool.starmap(func2, zip(range(5), range(5,10))))
+
+
 # # This is a non-blocking call that only loads the environment.
 # print("Please start environment")
 # env = UnityEnvironment(file_name=None, seed=1, side_channels=[], no_graphics=False)
@@ -88,4 +165,3 @@ def addNode(network, layerIdx, addNNodes):
 #     env.step()
 # 
 
-doNothingBreakPoint()
