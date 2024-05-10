@@ -7,14 +7,39 @@ import torch.nn as nn
 import pdb
 import neat
 import multiprocessing
+import pickle
 
+# cd ..\..\Users\theod
 # cd Master_project
 # venv\Scripts\activate
 # python Pythonscripts\MLAgentLearn.py
 
+
+
+# TODO: make config into a file
+CONFIG_DETAILS = {
+    "unityEnvironmentFilepath": r"C:\Users\theod\Master_project\Bot locomotion.exe",
+    "configFilepath": r"C:\Users\theod\Master_project\Pythonscripts\configs\NEATconfig",
+    "simulationSteps": 600,
+    "unitySeed": 1,
+    "PythonSeed": 69420,
+    "processingVersion": 3, #1:serial, 2:list-based parallel, 3:starmap-based parallel
+    "parallelWorkers": 12,
+    "numberOfGenerations": 100,
+    "simulationTimeout": 1800, # In seconds, 1800 seconds is half an hour
+    "generationsBeforeSave": 1,
+    "resultsFolder": r"C:\Users\theod\Master_project\Populations" + "\z"[:1],
+    "lastPopulationCheckpoint": r"C:\Users\theod\Master_project\Populations\popcount_24_simlength600_generation_33.pkl",
+}
+with open(CONFIG_DETAILS["configFilepath"]) as infile:
+    for line in infile.readlines():
+        if line.startswith("pop_size = "):
+            CONFIG_DETAILS["populationCount"] = min(24, int(line[11:]))
+
 doNothingBreakPoint = lambda : 0
 import random
-random.seed(69420)
+random.seed(CONFIG_DETAILS["PythonSeed"])
+
 
 def addLayer(network, layerIdx, actFunc=nn.ReLU(), bias=True):
     # Layer added is in the form of an identity matrix with bias=0 and should have no effective change immediately upon addition
@@ -70,98 +95,131 @@ def addNode(network, layerIdx, addNNodes):
 
 
 
-def fitnessFunc(genome,config):
-    # pdb.set_trace()
-    # networks = [(gen[0], gen[1], neat.nn.FeedForwardNetwork.create(gen[1], config)) for gen in genomes]
-    # for genID, gen, net in networks:
-    #     gen.fitness = ((net.activate((1,1)) - np.arange(12))**2).sum() + len(gen.nodes) + len(gen.connections)
-
+def fitnessFuncTest(genome,config):
     genID, gen = genome 
     network = neat.nn.FeedForwardNetwork.create(gen, config)
     return -(((network.activate((1,1)) - (np.arange(2)+100))**2).sum())# + len(gen.nodes) + len(gen.connections))
 
         
+def simulateGenome(genome,config,queue,no_graphics=True,simulationSteps=CONFIG_DETAILS["simulationSteps"]):
+    genID, gen = genome 
 
-def evaluatePopulation(genomes, config, numWorkers=12):
-    processingVersion = 1
+    worker_id = queue.get()
+    # This is a non-blocking call that only loads the environment.
+    if CONFIG_DETAILS["unityEnvironmentFilepath"]:
+        env = UnityEnvironment(
+            file_name=CONFIG_DETAILS["unityEnvironmentFilepath"],
+            seed=CONFIG_DETAILS["unitySeed"], 
+            side_channels=[], 
+            no_graphics=no_graphics,
+            worker_id=worker_id,
+            timeout_wait=CONFIG_DETAILS["simulationTimeout"]
+        )
+    else:
+        print("Please start environment")
+        env = UnityEnvironment()
+        print("Environment found")
+    env.reset()
 
-    # 1: serial
-    # 2: list-based
-    # 3: starmap
+    behaviorNames = list(env.behavior_specs.keys())
+    assert len(behaviorNames) == 1, f"There are more than 1 behaviours: {behaviorNames}"
+    behaviorName = behaviorNames[0]
 
-    match processingVersion:
+    network = neat.nn.FeedForwardNetwork.create(gen, config)
+    reward = 0
+    for t in range(simulationSteps):
+        decisionSteps, other = env.get_steps(behaviorName)
+        # pdb.set_trace()
+        for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+            # action = np.asarray((1,1))
+            # env.set_action_for_agent(behaviorName, id, ActionTuple(action.reshape(1,2)))
+            action = np.array(network.activate(obs)).reshape(1,2)
+            env.set_action_for_agent(behaviorName, id, ActionTuple(np.array(action).reshape(1,2)))
+        reward +=sum(decisionSteps.reward)
+        env.step()
+    env.close()
+    queue.put(worker_id)
+
+    # print(f"genome {genID} sucessfully simulated")
+    return reward
+    
+def fitnessFunc(genome,config,queue):
+    return simulateGenome(genome,config,queue)
+
+
+def evaluatePopulation(genomes, config, numWorkers=CONFIG_DETAILS["parallelWorkers"]):
+    # print("Evaluating genome IDs: ", end="")
+    # for genID, _ in genomes:
+    #     print(f"{genID}, ", end="")
+    manager = multiprocessing.Manager()
+    queue = manager.Queue()
+    [queue.put(i) for i in range(24)] # Uses ports 0-23
+    match CONFIG_DETAILS["processingVersion"]:
         case 1:
             print(f"Using serial processing")
             for genome in genomes:
-                genome[1].fitness = fitnessFunc(genome,config)
+                genome[1].fitness = fitnessFunc(genome,config,queue)
 
         case 2:
             print(f"Using list")
             with multiprocessing.Pool(numWorkers) as pool:
                 jobs = [pool.apply_async(fitnessFunc, (genome,config)) for genome in genomes]
                 
-                for job, (genID, genome) in zip(jobs, genomes):
+                for job, (genID, genome) in zip(jobs, genomes,queue):
                     genome.fitness = job.get(timeout=None)
             
         case 3:
             print(f"Using starmap")
             with multiprocessing.Pool(numWorkers) as pool:
-                for genome, fitness in zip(genomes, pool.starmap(fitnessFunc, [(genome, config) for genome in genomes])):
-                    genome[1].fitness = fitness
+                for genome, fitness in zip(genomes, pool.starmap(fitnessFunc, [(genome, config,queue) for genome in genomes])):
+                    genome[1].fitness = fitness/CONFIG_DETAILS["simulationSteps"]
 
 
-def run():
-    filepath = r"C:\Users\theod\Master_project\Pythonscripts\configs\NEATconfig"
-    config = neat.Config(neat.DefaultGenome,neat.DefaultReproduction,neat.DefaultSpeciesSet,neat.DefaultStagnation, filepath)
-    pop = neat.Population(config)
-    pop.add_reporter(neat.StdOutReporter(False))
-    bestBoi = pop.run(evaluatePopulation, 100)
-    network = neat.nn.FeedForwardNetwork.create(bestBoi, config)
+def run(config, numGen=CONFIG_DETAILS["numberOfGenerations"]):
+    if CONFIG_DETAILS["lastPopulationCheckpoint"]:
+        with open(CONFIG_DETAILS["lastPopulationCheckpoint"], "rb") as infile:
+            pop = pickle.load(infile)
+    else:
+        pop = neat.Population(config)
+        pop.add_reporter(neat.StdOutReporter(False))
 
-    print('\nOutput:')
-    networkInputs  = ((1,1),)
-    networkOutputs = ((np.arange(2)+100),)
-    for xi, xo in zip(networkInputs, networkOutputs):
-        output = network.activate(xi)
-        print("  input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
+    while pop.generation < numGen:
+        #TODO: print time of start
+        bestBoi = pop.run(evaluatePopulation, CONFIG_DETAILS["generationsBeforeSave"])
 
-    # pdb.set_trace()
+        outfileName = CONFIG_DETAILS["resultsFolder"] + f"popcount_{CONFIG_DETAILS['populationCount']}_simlength{CONFIG_DETAILS['simulationSteps']}_generation_{pop.generation}.pkl"
+        with open(outfileName, "wb") as outfile:
+            pickle.dump(pop, outfile)
+        #TODO: print time of end
+
+    return pop, bestBoi
 
 
-def func1(x):
-    return x**2
-def func2(x,y):
-    return x*y
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     
-    run()    
+    config = neat.Config(neat.DefaultGenome,neat.DefaultReproduction,neat.DefaultSpeciesSet,neat.DefaultStagnation, CONFIG_DETAILS["configFilepath"])
+    finalGeneration, bestBoi = run(config)    
+    # with open(CONFIG_DETAILS["resultsFolder"] + "finalGeneration.pkl", "wb") as outfile:
+    #     pickle.dump(finalGeneration, outfile)
+
+    try:
+        # import winsound
+        # duration = 1000  # milliseconds
+        # freq = 69  # Hz
+        # winsound.Beep(freq, duration)
+        # print(\a)
+        # print(\007)
+        # winsound.MessageBeep()
+        simulateGenome([0,bestBoi],config,no_graphics=False,simulationSteps=50000)
+    except:
+        pass
+
+    # pdb.set_trace()
 
 
     # pool = multiprocessing.Pool(4)
     # print(pool.map(func1, range(5)))
     # print(pool.starmap(func2, zip(range(5), range(5,10))))
 
-
-# # This is a non-blocking call that only loads the environment.
-# print("Please start environment")
-# env = UnityEnvironment(file_name=None, seed=1, side_channels=[], no_graphics=False)
-# print("Environment found")
-# # Start interacting with the environment.
-# env.reset()
-
-# behaviorName = list(env.behavior_specs.keys())
-# assert len(behaviorName) == 1, f"There are more than 1 behaviour: {behaviorName}"
-# # print(f"available behaviours: {type(behavior_names[0])}")
-
-# for t in range(50000):
-#     decisionSteps, other = env.get_steps(behaviorName)
-#     decisionSteps.obs # = observations, as I've defined them
-
-#     for id in decisionSteps.agent_id:
-#         action = np.asarray((1,1))
-#         env.set_action_for_agent(behaviorName, id, ActionTuple(action.reshape(1,2)))
-
-#     env.step()
-# 
 
