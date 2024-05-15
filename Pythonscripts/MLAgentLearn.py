@@ -8,6 +8,7 @@ import pdb
 import neat
 import multiprocessing
 import pickle
+import random
 
 # cd ..\..\Users\theod
 # cd Master_project
@@ -28,8 +29,8 @@ CONFIG_DETAILS = {
     "configFilepath": r"C:\Users\theod\Master_project"
                       r"\Pythonscripts\configs\NEATconfig",
     "simulationSteps": 600,
-    "unitySeed": 1,
-    "PythonSeed": 69420,
+    "unitySeed": random.randint(0,1000),
+    "PythonSeed": random.randint(0,1000),
     "processingVersion": 3, #serial,list-based parallel,starmap-based parallel
     "parallelWorkers": 12,
     "numberOfGenerations": 101,
@@ -232,17 +233,57 @@ class Learner():
 
         return pop, bestBoi
 
-   
+    def demonstrateGenome(self, genomeFilePath, config):
+        with open(genomeFilePath, "rb") as infile:
+            population = pickle.load(infile)
+        if isinstance(population, tuple):
+            population, genome = population
+        elif isinstance(population, neat.population.Population):
+            raise NotImplemented
+
+        print("Please start environment")
+        env = UnityEnvironment()
+        print("Environment found")
+
+        env.reset()
+        # env.step()
+        # pdb.set_trace()
+        self.assertBehaviorNames(env)
+        behaviorNames = list(env.behavior_specs.keys())
+        behaviorName = behaviorNames[0]
+
+        # behaviorName = "My Behavior"
+
+        network = neat.nn.FeedForwardNetwork.create(genome, config)
+
+        while True:
+            decisionSteps, other = env.get_steps(behaviorName)
+            for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                action = np.array(network.activate(obs)).reshape(1,2)
+                env.set_action_for_agent(
+                    behaviorName, 
+                    id, 
+                    ActionTuple(np.array(action).reshape(1,2))
+                )
+            env.step()
+
+
+    def assertBehaviorNames(self, env):
+        assert len(list(env.behavior_specs.keys())) == 1,\
+         (f"There is not exactly 1 behaviour in the "
+          f"Unity environment: {list(env.behavior_specs.keys())}")
+
+
+
+
 if __name__ == "__main__":
 
     learner = Learner()
-    assert False,\
-    (f"There is not exactly 1 behaviour in the "+
-     f"Unity environment: {2+2}")
     # raise NotImplementedError("test")
-    # learner.demonstrateGenome(
-    #     "Populations\popcount_24_simlength600_generation_101.pkl", NEAT_CONFIG
-    #     )
+    learner.demonstrateGenome(
+        "Populations\popcount_24_simlength600_generation_101.pkl", 
+        NEAT_CONFIG,
+        )
 
 
     # multiprocessing.freeze_support()
