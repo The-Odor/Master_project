@@ -9,6 +9,7 @@ import neat
 import multiprocessing
 import pickle
 import random
+import time
 
 # cd ..\..\Users\theod
 # cd Master_project
@@ -24,13 +25,13 @@ import random
 
 # TODO: make config into a file
 CONFIG_DETAILS = {
-    "unityEnvironmentFilepath": r"C:\Users\theod\Master_pro"
-                                r"ject\Bot locomotion.exe",
+    "unityEnvironmentFilepath": r"C:\Users\theod\Master_project"
+                                r"\Bot locomotion.exe 0.2",
     "configFilepath": r"C:\Users\theod\Master_project"
                       r"\Pythonscripts\configs\NEATconfig",
     "simulationSteps": 600,
-    "unitySeed": random.randint(0,1000),
-    "PythonSeed": random.randint(0,1000),
+    "unitySeed": lambda : random.randint(1, 1000),  # Is called
+    "PythonSeed": lambda : random.randint(1, 1000), # Is called
     "processingVersion": 3, #serial,list-based parallel,starmap-based parallel
     "parallelWorkers": 12,
     "numberOfGenerations": 101,
@@ -55,7 +56,7 @@ NEAT_CONFIG = neat.Config(
 
 doNothingBreakPoint = lambda : 0
 import random
-random.seed(CONFIG_DETAILS["PythonSeed"])
+random.seed(CONFIG_DETAILS["PythonSeed"]())
 
 
 def addLayer(network, layerIdx, actFunc=nn.ReLU(), bias=True):
@@ -133,7 +134,7 @@ class Learner():
         if CONFIG_DETAILS["unityEnvironmentFilepath"]:
             env = UnityEnvironment(
                 file_name=CONFIG_DETAILS["unityEnvironmentFilepath"],
-                seed=CONFIG_DETAILS["unitySeed"], 
+                seed=CONFIG_DETAILS["unitySeed"](), 
                 side_channels=[], 
                 no_graphics=no_graphics,
                 worker_id=worker_id,
@@ -246,13 +247,9 @@ class Learner():
         print("Environment found")
 
         env.reset()
-        # env.step()
-        # pdb.set_trace()
         self.assertBehaviorNames(env)
         behaviorNames = list(env.behavior_specs.keys())
         behaviorName = behaviorNames[0]
-
-        # behaviorName = "My Behavior"
 
         network = neat.nn.FeedForwardNetwork.create(genome, config)
 
@@ -274,17 +271,49 @@ class Learner():
           f"Unity environment: {list(env.behavior_specs.keys())}")
 
 
+    # Applies basic motion for visual evaluation of physical rules
+    def motionTest(self):
+        print("Please start environment")
+        env = UnityEnvironment()
+        print("Environment found")
+
+        env.reset()
+
+        self.assertBehaviorNames(env)
+        behaviorNames = list(env.behavior_specs.keys())
+        behaviorName = behaviorNames[0]
+
+        motionDuration = 5
+
+        while True:
+            decisionSteps, other = env.get_steps(behaviorName)
+            T = time.time()
+            if T == motionDuration/2:
+                # Prevents division by 0
+                action = (1,1)
+            else:
+                action = 2*(T % motionDuration) / motionDuration - 1
+                action = (action, action)
+            for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                env.set_action_for_agent(
+                    behaviorName, 
+                    id, 
+                    ActionTuple(np.array(action).reshape(1,2))
+                )
+            env.step()
 
 
 if __name__ == "__main__":
 
     learner = Learner()
-    # raise NotImplementedError("test")
-    learner.demonstrateGenome(
-        "Populations\popcount_24_simlength600_generation_101.pkl", 
-        NEAT_CONFIG,
-        )
+    learner.run()
 
+    # learner.demonstrateGenome(
+    #     "Populations\popcount_24_simlength600_generation_101.pkl", 
+    #     NEAT_CONFIG,
+    #     )
+
+    # learner.motionTest()
 
     # multiprocessing.freeze_support()
     # finalGeneration, bestBoi = run(NEAT_CONFIG)    

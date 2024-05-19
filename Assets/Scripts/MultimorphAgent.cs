@@ -20,8 +20,10 @@ public class MultimorphAgent : Agent {
     double TAU;
     
     // Network output factors
-    float distanceFactor;
-    float velocityFactor;
+    float distanceSmoothingFactor;
+    float velocitySmoothingFactor;
+    float distanceScalingFactor;
+    float velocityScalingFactor;
     
     // Robot structural factors
     float stiffnessFactor;
@@ -34,6 +36,8 @@ public class MultimorphAgent : Agent {
 
     // Training variables
     float rewardFactor = 1e-3f;
+    bool disqualified = false;
+    float disqualificationHeight = 10;
 
     // Other variables
     ArticulationBody articulationBody; 
@@ -58,8 +62,10 @@ public class MultimorphAgent : Agent {
         articulationBody = this.transform.GetComponent<ArticulationBody>();
 
         // TAU = 2*Math.PI; // It's a much superior variable, fight me on it
-        distanceFactor = 180;
-        velocityFactor = 100;
+        distanceSmoothingFactor = 1e3f;
+        velocitySmoothingFactor = 1e3f;
+        distanceScalingFactor = 1e3f;
+        velocityScalingFactor = 1e3f;
 
         forceLimitFactor = 1e2f;
         dampingFactor = 1;
@@ -105,10 +111,17 @@ public class MultimorphAgent : Agent {
     void Update() {
         // Reward is cumulated over time as horizontal displacement from origin
         // Cumulative reward rewards high initial motion.
-        float reward = rewardFactor*(float)Math.Sqrt(
-            Math.Pow(transform.position[0] - startPosition[0], 2)
-          + Math.Pow(transform.position[2] - startPosition[2], 2)
-            );
+        float reward;
+        if (disqualified || transform.position[1] > disqualificationHeight){
+            disqualified = true;
+            reward = 0;
+        } else {
+            reward = rewardFactor*(float)Math.Sqrt(
+                Math.Pow(transform.position[0] - startPosition[0], 2)
+              + Math.Pow(transform.position[2] - startPosition[2], 2)
+                );
+        }
+            
         if (!float.IsNaN(reward)) {AddReward(reward);}
         else {Debug.Log("Reward somehow became a NaN??");}
     }
@@ -204,16 +217,20 @@ public class MultimorphAgent : Agent {
             sensor.AddObservation(0.0f);
         } else {
             ArticulationBody articulationParent = this.transform.parent.GetComponent<ArticulationBody>();
-            if (float.IsNaN(articulationParent.jointPosition[0])) {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
+            if (float.IsNaN(articulationParent.jointPosition[0])) 
+                {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
             else {sensor.AddObservation(articulationParent.jointPosition[0]);}
-            if (float.IsNaN(articulationParent.jointVelocity[0])) {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
+            if (float.IsNaN(articulationParent.jointVelocity[0])) 
+                {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
             else {sensor.AddObservation(articulationParent.jointVelocity[0]);}
             // sensor.AddObservation(0.0f);
         }
         // Own rotation (1 DoF -> 2 input)
-        if (float.IsNaN(articulationBody.jointPosition[0])) {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
+        if (float.IsNaN(articulationBody.jointPosition[0])) 
+            {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
         else {sensor.AddObservation(articulationBody.jointPosition[0]);}
-        if (float.IsNaN(articulationBody.jointVelocity[0])) {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
+        if (float.IsNaN(articulationBody.jointVelocity[0])) 
+            {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
         else {sensor.AddObservation(articulationBody.jointVelocity[0]);}
         // sensor.AddObservation(0.0f);
 
@@ -222,9 +239,11 @@ public class MultimorphAgent : Agent {
         foreach (Transform child in this.transform) {
             if (child.GetComponent<ArticulationBody>() != null) {
                 ArticulationBody articulationChild = child.GetComponent<ArticulationBody>();
-                if (float.IsNaN(articulationChild.jointPosition[0])) {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
+                if (float.IsNaN(articulationChild.jointPosition[0])) 
+                    {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
                 else {sensor.AddObservation(articulationChild.jointPosition[0]);}
-                if (float.IsNaN(articulationChild.jointVelocity[0])) {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
+                if (float.IsNaN(articulationChild.jointVelocity[0])) 
+                    {sensor.AddObservation(0.0f); Debug.Log("NaN observation detected");} 
                 else {sensor.AddObservation(articulationChild.jointVelocity[0]);}
                 // sensor.AddObservation(0.0f);
                 childCount++;
@@ -263,18 +282,21 @@ public class MultimorphAgent : Agent {
 
     // Trying to copy from the ArmController, using some of their helpers
     private void RotateAction(float target, float targetVelocity) {
-        // Vector3 diff = startPosition - this.transform.position;
-        // articulationBody.velocity = diff;
-        // Debug.Log($"velocity set to: ({diff}|{articulationBody.velocity}) (from {startPosition} - {this.transform.position}).");
-        // return;
-
         // A bigger motion is made faster
-        // SmoothDistanceChange = Mathf.MoveTowards(SmoothDistanceChange, target*distanceFactor, Math.Abs(target*distanceFactor - SmoothDistanceChange)*Time.fixedDeltaTime);
-        // SmoothVelocityChange = Mathf.MoveTowards(SmoothVelocityChange, targetVelocity*velocityFactor, Math.Abs(target*velocityFactor - SmoothVelocityChange)*Time.fixedDeltaTime);
+        // SmoothDistanceChange = Mathf.MoveTowards(
+        //     SmoothDistanceChange, 
+        //     target*distanceSmoothingFactor, 
+        //     distanceScalingFactor*Math.Abs(target - SmoothDistanceChange)*Time.fixedDeltaTime
+        // );
+        // SmoothVelocityChange = Mathf.MoveTowards(
+        //     SmoothVelocityChange, 
+        //     targetVelocity*velocitySmoothingFactor, 
+        //     velocityScalingFactor*Math.Abs(target - SmoothVelocityChange)*Time.fixedDeltaTime
+        // );
                 
         // Until we think we need the actual smoothing, we're going to just make it work like this
-        SmoothDistanceChange = target * distanceFactor;
-        SmoothVelocityChange = targetVelocity * velocityFactor;
+        SmoothDistanceChange = target * distanceSmoothingFactor;
+        SmoothVelocityChange = targetVelocity * velocitySmoothingFactor;
         
         var drive = articulationBody.xDrive;
         drive.stiffness = stiffnessFactor;

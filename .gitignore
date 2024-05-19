@@ -93,3 +93,4 @@ MonoBleedingEdge*
 *.exe
 *.asset
 *.json
+*.pyc
