@@ -94,3 +94,6 @@ MonoBleedingEdge*
 *.asset
 *.json
 *.pyc
+*.assets
+*.resS
+/Bot locomotion.0.3.1_Data
