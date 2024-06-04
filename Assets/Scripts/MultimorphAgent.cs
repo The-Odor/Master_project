@@ -20,15 +20,17 @@ public class MultimorphAgent : Agent {
     double TAU;
     
     // Network output factors
-    float distanceSmoothingFactor;
-    float velocitySmoothingFactor;
-    float distanceScalingFactor;
-    float velocityScalingFactor;
+    float distanceSmoothingFactor = 1e3f;
+    float velocitySmoothingFactor = 1e3f;
+    float distanceScalingFactor = 1e3f;
+    float velocityScalingFactor = 1e3f;
     
     // Robot structural factors
-    float stiffnessFactor;
-    float dampingFactor;
-    float forceLimitFactor;
+    float stiffnessFactor = 1;
+    float dampingFactor = 1;
+    float forceLimitFactor = 3.402823e3f;
+    float angleUpperLimit = 60;
+    float angleLowerLimit = -60;
 
     // Movement variables
     float SmoothDistanceChange;
@@ -62,18 +64,10 @@ public class MultimorphAgent : Agent {
         articulationBody = this.transform.GetComponent<ArticulationBody>();
 
         // TAU = 2*Math.PI; // It's a much superior variable, fight me on it
-        distanceSmoothingFactor = 1e3f;
-        velocitySmoothingFactor = 1e3f;
-        distanceScalingFactor = 1e3f;
-        velocityScalingFactor = 1e3f;
-
-        forceLimitFactor = 1e2f;
-        dampingFactor = 1;
-        stiffnessFactor = 1;
 
         var drive = articulationBody.xDrive;
-        drive.lowerLimit = -60;
-        drive.upperLimit = 60;
+        drive.lowerLimit = angleLowerLimit;
+        drive.upperLimit = angleUpperLimit;
         articulationBody.xDrive = drive;
 
         MaxStep = 6400;
@@ -281,22 +275,22 @@ public class MultimorphAgent : Agent {
     }
 
     // Trying to copy from the ArmController, using some of their helpers
-    private void RotateAction(float target, float targetVelocity) {
+    private void RotateAction(float targetAngleNormalized, float targetVelocityNormalized) {
         // A bigger motion is made faster
         // SmoothDistanceChange = Mathf.MoveTowards(
         //     SmoothDistanceChange, 
-        //     target*distanceSmoothingFactor, 
-        //     distanceScalingFactor*Math.Abs(target - SmoothDistanceChange)*Time.fixedDeltaTime
+        //     targetAngleNormalized*distanceSmoothingFactor, 
+        //     distanceScalingFactor*Math.Abs(targetAngleNormalized - SmoothDistanceChange)*Time.fixedDeltaTime
         // );
         // SmoothVelocityChange = Mathf.MoveTowards(
         //     SmoothVelocityChange, 
-        //     targetVelocity*velocitySmoothingFactor, 
-        //     velocityScalingFactor*Math.Abs(target - SmoothVelocityChange)*Time.fixedDeltaTime
+        //     targetAngleNormalized*velocitySmoothingFactor, 
+        //     velocityScalingFactor*Math.Abs(targetVelocityNormalized - SmoothVelocityChange)*Time.fixedDeltaTime
         // );
                 
         // Until we think we need the actual smoothing, we're going to just make it work like this
-        SmoothDistanceChange = target * distanceSmoothingFactor;
-        SmoothVelocityChange = targetVelocity * velocitySmoothingFactor;
+        SmoothDistanceChange = targetAngleNormalized * distanceSmoothingFactor;
+        SmoothVelocityChange = targetVelocityNormalized * velocitySmoothingFactor;
         
         var drive = articulationBody.xDrive;
         drive.stiffness = stiffnessFactor;
@@ -305,6 +299,7 @@ public class MultimorphAgent : Agent {
 
         drive.target = SmoothDistanceChange;// + articulationBody.jointPosition[0];
         drive.targetVelocity = SmoothVelocityChange;
+        // drive.targetVelocity = 0;
         
         articulationBody.xDrive = drive;
         
