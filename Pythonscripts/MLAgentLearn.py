@@ -10,9 +10,10 @@ import multiprocessing
 import pickle
 import random
 import time
+import datetime
+import os
 
-# cd ..\..\Users\theod
-# cd Master_project
+# cd C:\Users\theod\Master_project
 # venv\Scripts\activate
 # python Pythonscripts\MLAgentLearn.py
 
@@ -25,21 +26,24 @@ import time
 
 # TODO: make config into a file
 CONFIG_DETAILS = {
-    "unityEnvironmentFilepath": r"C:\Users\theod\Master_project"
-                                r"\Bot locomotion.exe 0.2",
+    "unityEnvironmentFilepath": r"C:\Users\theod\Master_project",
+    "unityEnvironmentName": "Bot locomotion",
+    "unityEnvironmentVersion": ".0.4",
     "configFilepath": r"C:\Users\theod\Master_project"
                       r"\Pythonscripts\configs\NEATconfig",
-    "simulationSteps": 600,
+    "simulationSteps": 300,
     "unitySeed": lambda : random.randint(1, 1000),  # Is called
     "PythonSeed": lambda : random.randint(1, 1000), # Is called
     "processingVersion": 3, #serial,list-based parallel,starmap-based parallel
     "parallelWorkers": 12,
     "numberOfGenerations": 101,
-    "simulationTimeout": 1800, # In seconds, 1800 seconds is half an hour
+    "simulationTimeout": 1800, # In seconds; 1800 seconds is half an hour
     "generationsBeforeSave": 1,
-    "resultsFolder": r"C:\Users\theod\Master_project\Populations" + "\z"[:1],
-    "lastPopulationCheckpoint": r"C:\Users\theod\Master_project\Populations"
-                            r"\popcount_24_simlength600_generation_100.pkl",
+    "resultsFolder": r"C:\Users\theod\Master_project\Populations",
+    # "lastPopulationCheckpoint": r"C:\Users\theod\Master_project\Populations"
+    #                         r"\popcount_24_simlength600_generation_100.pkl",
+    "lastPopulationCheckpoint": None,
+
 }
 with open(CONFIG_DETAILS["configFilepath"]) as infile:
     for line in infile.readlines():
@@ -132,8 +136,11 @@ class Learner():
         worker_id = queue.get()
         # This is a non-blocking call that only loads the environment.
         if CONFIG_DETAILS["unityEnvironmentFilepath"]:
+            fileName = f"{CONFIG_DETAILS['unityEnvironmentFilepath']}\\"\
+                       f"{CONFIG_DETAILS['unityEnvironmentName']}"\
+                       f"{CONFIG_DETAILS['unityEnvironmentVersion']}.exe"
             env = UnityEnvironment(
-                file_name=CONFIG_DETAILS["unityEnvironmentFilepath"],
+                file_name=fileName,
                 seed=CONFIG_DETAILS["unitySeed"](), 
                 side_channels=[], 
                 no_graphics=no_graphics,
@@ -177,6 +184,11 @@ class Learner():
         # print("Evaluating genome IDs: ", end="")
         # for genID, _ in genomes:
         #     print(f"{genID}, ", end="")
+        timeNow = datetime.datetime.now()
+        print(f"Initialization at: {str(timeNow.hour).zfill(2)}"
+              f":{str(timeNow.minute).zfill(2)} :"
+              f" {str(timeNow.second).zfill(2)}."
+              f"{timeNow.microsecond}")
         manager = multiprocessing.Manager()
         queue = manager.Queue()
         [queue.put(i) for i in range(24)] # Uses ports 0-23
@@ -208,7 +220,9 @@ class Learner():
                                             CONFIG_DETAILS["simulationSteps"]
 
 
-    def run(self, config, numGen=CONFIG_DETAILS["numberOfGenerations"]):
+    def run(self, config=NEAT_CONFIG, 
+            numGen=CONFIG_DETAILS["numberOfGenerations"]
+        ):
         if CONFIG_DETAILS["lastPopulationCheckpoint"]:
             filepath = CONFIG_DETAILS["lastPopulationCheckpoint"]
             with (filepath, "rb") as infile:
@@ -224,13 +238,18 @@ class Learner():
                 CONFIG_DETAILS["generationsBeforeSave"]
             )
 
-            outfileName = CONFIG_DETAILS["resultsFolder"] +\
-                          (f"popcount_{CONFIG_DETAILS['populationCount']}_"
-                           "simlength{CONFIG_DETAILS['simulationSteps']}_"
-                           "generation_{pop.generation}.pkl")
+            outfilePath = f"{CONFIG_DETAILS['resultsFolder']}"\
+                          f"\{CONFIG_DETAILS['unityEnvironmentVersion']}"\
+                          f"\popcount{CONFIG_DETAILS['populationCount']}_"\
+                          f"simlength{CONFIG_DETAILS['simulationSteps']}_"
+                            
+            outfileName = outfilePath +\
+                          f"\generation_{str(pop.generation).zfill(4)}.pkl"
+            
+            if not os.path.exists(outfilePath):
+                os.makedirs(outfilePath)
             with open(outfileName, "wb") as outfile:
                 pickle.dump((pop, bestBoi), outfile)
-            #TODO: print time of end
 
         return pop, bestBoi
 
@@ -246,6 +265,23 @@ class Learner():
         env = UnityEnvironment()
         print("Environment found")
 
+        # fileName = f"{CONFIG_DETAILS['unityEnvironmentFilepath']}\\"\
+        #             f"{CONFIG_DETAILS['unityEnvironmentName']}"\
+        #             f"{CONFIG_DETAILS['unityEnvironmentVersion']}.exe"
+        # env = UnityEnvironment(
+        #     file_name = fileName,
+        #     worker_id = 0,
+        #     base_port = None,
+        #     seed = CONFIG_DETAILS["unitySeed"](),
+        #     no_graphics = False,
+        #     no_graphics_monitor = False,
+        #     timeout_wait = CONFIG_DETAILS["simulationTimeout"],
+        #     additional_args = None,
+        #     side_channels = None,
+        #     log_folder = None,
+        #     num_areas =  1
+        # )
+
         env.reset()
         self.assertBehaviorNames(env)
         behaviorNames = list(env.behavior_specs.keys())
@@ -255,13 +291,17 @@ class Learner():
 
         while True:
             decisionSteps, other = env.get_steps(behaviorName)
+            printout = ""
             for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                 action = np.array(network.activate(obs)).reshape(1,2)
+                printout += f"{obs} -> {action}\n"
                 env.set_action_for_agent(
                     behaviorName, 
                     id, 
                     ActionTuple(np.array(action).reshape(1,2))
                 )
+            print(printout, end="\n\n")
+            # time.sleep(10)
             env.step()
 
 
@@ -283,7 +323,7 @@ class Learner():
         behaviorNames = list(env.behavior_specs.keys())
         behaviorName = behaviorNames[0]
 
-        motionDuration = 5
+        motionDuration = 15
 
         while True:
             decisionSteps, other = env.get_steps(behaviorName)
@@ -306,17 +346,19 @@ class Learner():
 if __name__ == "__main__":
 
     learner = Learner()
-    learner.run()
 
-    # learner.demonstrateGenome(
-    #     "Populations\popcount_24_simlength600_generation_101.pkl", 
-    #     NEAT_CONFIG,
-    #     )
+    multiprocessing.freeze_support()
+    # finalGeneration, bestBoi = learner.run()    
 
     # learner.motionTest()
 
-    # multiprocessing.freeze_support()
-    # finalGeneration, bestBoi = run(NEAT_CONFIG)    
+    learner.demonstrateGenome(
+        f"{CONFIG_DETAILS['resultsFolder']}\\"
+        f"{CONFIG_DETAILS['unityEnvironmentVersion']}\\"
+        "popcount24_simlength300_\\generation_0101.pkl", 
+        NEAT_CONFIG,
+        )
+
 
     # import winsound
     # duration = 1000  # milliseconds
