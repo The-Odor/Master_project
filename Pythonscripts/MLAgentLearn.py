@@ -1,8 +1,8 @@
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
 import numpy as np
-import torch
-import torch.nn as nn
+# import torch
+# import torch.nn as nn
 # import torch.optim as optim # May be necessary, haven't used it yet
 import pdb
 import neat
@@ -25,7 +25,7 @@ from visualize import draw_net
 CONFIG_DETAILS = {
     "unityEnvironmentFilepath": r"C:\Users\theod\Master_project",
     "unityEnvironmentName": "Bot locomotion",
-    "unityEnvironmentVersion": ".test",
+    "unityEnvironmentVersion": ".0.4",
     # "unityEnvironmentVersion": ".test",
     "configFilepath": r"C:\Users\theod\Master_project"
                       r"\Pythonscripts\configs\NEATconfig",
@@ -64,25 +64,13 @@ import random
 random.seed(CONFIG_DETAILS["PythonSeed"]())
 
 
-### Use 1 activation function
-# activationFunc = nn.ReLU
-# layerArgs = ((2,3), (3,3), (3,2))
-# neuralNetwork = nn.Sequential(*[layerActivation for concatenation in [(nn.Linear(inN, outN), activationFunc()) for (inN, outN) in layerArgs] for layerActivation in concatenation])
-
-### Use potentially multiple activation functions
-# layerArgs = ((2,12,nn.ReLU()), (12,12,nn.ReLU()), (12,2,nn.ReLU()))
-# neuralNetwork = nn.Sequential(*[layerActivation for concatenation in [(nn.Linear(arg[0], arg[1]), arg[2]) for arg in layerArgs] for layerActivation in concatenation])
-
-# neuralNetwork = addLayer(neuralNetwork, 2)
-# addNode(neuralNetwork, 2, 2)
-
 class Learner():
     def __init__(self, config_details):
         # self.CONFIG_DETAILS = config_details # BREAKS MULTIPROCESSING
         pass
 
     def fitnessFuncTest(self,genome,config):
-        genID, gen = genome 
+        _, gen = genome 
         network = neat.nn.FeedForwardNetwork.create(gen, config)
 
         mode = 1
@@ -90,14 +78,7 @@ class Learner():
             fitness = -(((network.activate((1,1)) - (np.arange(2)/2))**2).sum())
         elif mode == 2:
             fitness = -(((network.activate([1,]*72) - (np.arange(12)/12))**2).sum())
-        #match mode:
-        #    case 1:
-        #         #2 inputs, 2 outputs
-        #        fitness = -(((network.activate((1,1)) - (np.arange(2)/2))**2).sum())
-        #    case 2:
-        #         #72 inputs, 12 outputs
-        #        fitness = -(((network.activate([1,]*72) - (np.arange(12)/12))**2).sum())
-        # fitness-= len(gen.nodes) + len(gen.connections)/100
+
         return fitness
 
 
@@ -135,7 +116,8 @@ class Learner():
             reward +=sum(decisionSteps.reward) / len(decisionSteps.reward)
             env.step()
         env.close()
-        print(f"Reward given to {genID} as {reward}; last instance was {decisionSteps.reward}")
+        reward /= (CONFIG_DETAILS["simulationSteps"])
+        print(f"Reward given to {genID} as {reward}; last instance was ({', '.join(str(round(i,2)) for i in decisionSteps.reward)})")
 
         # print(f"genome {genID} sucessfully simulated")
         return reward
@@ -166,7 +148,7 @@ class Learner():
         fitnessResult = self.simulateGenome(genome,config,env)
         queue.put(worker_id)
 
-        return fitnessResult / (CONFIG_DETAILS["simulationSteps"])
+        return fitnessResult
 
 
 
@@ -374,15 +356,12 @@ class Learner():
                 )
             env.step()
 
-    def makePDF(self):
-        
-        _, genome = self.findLatestGeneration()
+    def makePDF(self, genome=None):
+        if genome is None:
+            _, genome = self.findLatestGeneration()
         draw_net(NEAT_CONFIG, genome, True)
 
 
-def debugFunc(a,b,c,d):
-    print(a,b,c,d)
-    return 5
 if __name__ == "__main__":
     mp.freeze_support()
 
@@ -391,17 +370,21 @@ if __name__ == "__main__":
     case = CONFIG_DETAILS["runMode"]
     #match learner.CONFIG_DETAILS["runMode"]:
     if case == 1:
-        #case 1:
+        # case 1: 
+        # Trains new generations
         finalGeneration, bestBoi = learner.run(useCheckpoint=True)    
     elif case == 2:
-        #case 2:
+        # case 2:
+        # Demonstrates Genomes (hence name, lol)
         learner.demonstrateGenome(learner.findLatestGeneration()[1])
     elif case == 3:
-        #case 3:
+        # case 3:
+        # Demonstrates simple motion in Unity editor
         learner.motionTest()
     elif case == 4:
-        #case 4: 
-        learner.makePDF()
+        # case 4: 
+        # creates a PDF of given genome (defaults to best of latest generation)
+        learner.makePDF(genome=None)
 
 
     # import winsound
