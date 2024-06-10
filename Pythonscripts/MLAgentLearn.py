@@ -6,13 +6,15 @@ import torch.nn as nn
 # import torch.optim as optim # May be necessary, haven't used it yet
 import pdb
 import neat
-import multiprocessing
+import multiprocessing as mp
+# import pathos.multiprocessing as pmp
 import pickle
 import random
 import time
 import datetime
 import os
 from visualize import draw_net
+
 
 # cd C:\Users\theod\Master_project
 # venv\Scripts\activate
@@ -23,27 +25,31 @@ from visualize import draw_net
 CONFIG_DETAILS = {
     "unityEnvironmentFilepath": r"C:\Users\theod\Master_project",
     "unityEnvironmentName": "Bot locomotion",
-    "unityEnvironmentVersion": ".0.4",
+    "unityEnvironmentVersion": ".test",
+    # "unityEnvironmentVersion": ".test",
     "configFilepath": r"C:\Users\theod\Master_project"
                       r"\Pythonscripts\configs\NEATconfig",
     "simulationSteps": 300,
-    "unitySeed": lambda : random.randint(1, 1000),  # Is called
-    "PythonSeed": lambda : random.randint(1, 1000), # Is called
-    "processingVersion": 3, #serial,list-based parallel,starmap-based parallel
+    "unitySeed": lambda : 5,#random.randint(1, 1000),  # Is called
+    "PythonSeed": lambda : 5,#random.randint(1, 1000), # Is called
+    "processingMode": 3, #serial, list-based parallel, starmap-based parallel
+    "runMode": 1, # Train, Demonstrate genome, Demonstrate physics, make PDF
     "parallelWorkers": 12,
     "numberOfGenerations": 101,
     "simulationTimeout": 1800, # In seconds; 1800 seconds is half an hour
     "generationsBeforeSave": 1,
     "resultsFolder": r"C:\Users\theod\Master_project\Populations",
-    # "lastPopulationCheckpoint": r"C:\Users\theod\Master_project\Populations"
+    # "useSpecificCheckpoint": r"C:\Users\theod\Master_project\Populations"
     #                         r"\popcount_24_simlength600_generation_100.pkl",
-    "lastPopulationCheckpoint": None,
+    "useSpecificCheckpoint": None, # Will overwrite natural checkpoint
 
 }
+
 with open(CONFIG_DETAILS["configFilepath"]) as infile:
     for line in infile.readlines():
         if line.startswith("pop_size = "):
-            CONFIG_DETAILS["populationCount"] = min(24, int(line[11:]))
+            CONFIG_DETAILS["populationCount"] = int(line[11:])
+            CONFIG_DETAILS["parallelWorkers"] = min(24, int(line[11:]))
 
 NEAT_CONFIG = neat.Config(
     neat.DefaultGenome,
@@ -71,37 +77,40 @@ random.seed(CONFIG_DETAILS["PythonSeed"]())
 # addNode(neuralNetwork, 2, 2)
 
 class Learner():
+    def __init__(self, config_details):
+        # self.CONFIG_DETAILS = config_details # BREAKS MULTIPROCESSING
+        pass
 
-    def fitnessFuncTest(genome,config):
+    def fitnessFuncTest(self,genome,config):
         genID, gen = genome 
         network = neat.nn.FeedForwardNetwork.create(gen, config)
-        fitness = -(((network.activate((1,1)) - (np.arange(2)+100))**2).sum())
+
+        mode = 1
+        if mode == 1:
+            fitness = -(((network.activate((1,1)) - (np.arange(2)/2))**2).sum())
+        elif mode == 2:
+            fitness = -(((network.activate([1,]*72) - (np.arange(12)/12))**2).sum())
+        #match mode:
+        #    case 1:
+        #         #2 inputs, 2 outputs
+        #        fitness = -(((network.activate((1,1)) - (np.arange(2)/2))**2).sum())
+        #    case 2:
+        #         #72 inputs, 12 outputs
+        #        fitness = -(((network.activate([1,]*72) - (np.arange(12)/12))**2).sum())
         # fitness-= len(gen.nodes) + len(gen.connections)/100
-        return 
+        return fitness
 
-            
-    def simulateGenome(self, genome,config,queue,no_graphics=True,
-                       simulationSteps=CONFIG_DETAILS["simulationSteps"]):
-        _, gen = genome 
 
-        worker_id = queue.get()
-        # This is a non-blocking call that only loads the environment.
-        if CONFIG_DETAILS["unityEnvironmentFilepath"]:
-            fileName = f"{CONFIG_DETAILS['unityEnvironmentFilepath']}\\"\
-                       f"{CONFIG_DETAILS['unityEnvironmentName']}"\
-                       f"{CONFIG_DETAILS['unityEnvironmentVersion']}.exe"
-            env = UnityEnvironment(
-                file_name=fileName,
-                seed=CONFIG_DETAILS["unitySeed"](), 
-                side_channels=[], 
-                no_graphics=no_graphics,
-                worker_id=worker_id,
-                timeout_wait=CONFIG_DETAILS["simulationTimeout"],
-            )
+    def simulateGenome(self, genome,config,env,simulationSteps=None):
+        if simulationSteps is None:
+            simulationSteps = CONFIG_DETAILS["simulationSteps"]
+        if isinstance(genome, tuple) and len(genome)==2:
+            genID, gen = genome
+        elif isinstance(genome, neat.genome.DefaultGenome):
+            genID, gen = ("no id", genome)
         else:
-            print("Please start environment")
-            env = UnityEnvironment()
-            print("Environment found")
+            raise TypeError(f"genome of unreadable type: {genome}")
+
         env.reset()
 
         self.assertBehaviorNames(env)
@@ -112,108 +121,200 @@ class Learner():
         reward = 0
         for t in range(simulationSteps):
             decisionSteps, other = env.get_steps(behaviorName)
+            observations = []
             for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-                action = np.array(network.activate(obs)).reshape(1,2)
+                observations.extend(obs)
+            action = np.array(network.activate(observations)).reshape(1,12)
+            
+            for i, id in enumerate(decisionSteps.agent_id):
+
                 env.set_action_for_agent(
                     behaviorName, id, 
-                    ActionTuple(np.array(action).reshape(1,2))
+                    ActionTuple(np.array(action[0][i*2:(i+1)*2]).reshape(1,2))
                     )
-            reward +=sum(decisionSteps.reward)
+            reward +=sum(decisionSteps.reward) / len(decisionSteps.reward)
             env.step()
         env.close()
-        queue.put(worker_id)
+        print(f"Reward given to {genID} as {reward}; last instance was {decisionSteps.reward}")
 
         # print(f"genome {genID} sucessfully simulated")
         return reward
         
-    def fitnessFunc(self, genome,config,queue):
-        return self.simulateGenome(genome,config,queue)
+    def fitnessFunc(self,genome,config,queue):
+        # return self.fitnessFuncTest(genome,config)
+
+    
+        worker_id = queue.get()
+        if CONFIG_DETAILS["unityEnvironmentFilepath"]:
+            fileName = f"{CONFIG_DETAILS['unityEnvironmentFilepath']}\\"\
+                       f"{CONFIG_DETAILS['unityEnvironmentName']}"\
+                       f"{CONFIG_DETAILS['unityEnvironmentVersion']}.exe"
+            env = UnityEnvironment(
+                file_name=fileName,
+                seed=CONFIG_DETAILS["unitySeed"](), 
+                side_channels=[], 
+                no_graphics=True,
+                worker_id=worker_id,
+                timeout_wait=CONFIG_DETAILS["simulationTimeout"],
+            )
+        else:
+            print("Please start environment")
+            env = UnityEnvironment()
+            print("Environment found")
+        env.reset()
+
+        fitnessResult = self.simulateGenome(genome,config,env)
+        queue.put(worker_id)
+
+        return fitnessResult / (CONFIG_DETAILS["simulationSteps"])
 
 
-    def evaluatePopulation(self, genomes, config, 
-                           numWorkers=CONFIG_DETAILS["parallelWorkers"]):
-        # print("Evaluating genome IDs: ", end="")
-        # for genID, _ in genomes:
-        #     print(f"{genID}, ", end="")
+
+    def evaluatePopulation(self,genomes,config,numWorkers=None):
+
+        if numWorkers is None:
+            numWorkers = CONFIG_DETAILS["parallelWorkers"]
+
         timeNow = datetime.datetime.now()
         print(f"Initialization at: {str(timeNow.hour).zfill(2)}"
               f":{str(timeNow.minute).zfill(2)} :"
               f" {str(timeNow.second).zfill(2)}."
               f"{timeNow.microsecond}")
-        manager = multiprocessing.Manager()
+
+        manager = mp.Manager()
         queue = manager.Queue()
-        [queue.put(i) for i in range(24)] # Uses ports 0-23
-        match CONFIG_DETAILS["processingVersion"]:
-            case 1:
-                print(f"Using serial processing")
-                for genome in genomes:
-                    genome[1].fitness = self.fitnessFunc(genome, config,queue)
+        [queue.put(i) for i in range(1,25)] # Uses ports 1-24 (0 is for editor)
+        
+        case = CONFIG_DETAILS["processingMode"]
+        #match CONFIG_DETAILS["processingMode"]:
+        #case 1:
+        if case == 1:
+            print(f"Using serial processing")
+            for genome in genomes:
+                genome[1].fitness = self.fitnessFunc(genome, config,queue)
 
-            case 2:
-                print(f"Using list")
-                with multiprocessing.Pool(numWorkers) as pool:
-                    jobs = [pool.apply_async(
-                                self.fitnessFunc, 
-                                (genome, config)
-                                ) for genome in genomes]
-                    
-                    for job, (genID, genome) in zip(jobs, genomes,queue):
-                        genome.fitness = job.get(timeout=None)
-                
-            case 3:
-                print(f"Using starmap")
-                with multiprocessing.Pool(numWorkers) as pool:
-                    for genome, fitness in zip(genomes, pool.starmap(
+            #case 2:
+        elif case == 2:
+            print(f"Using list")
+            with mp.Pool(numWorkers) as pool:
+                jobs = [pool.apply_async(
                             self.fitnessFunc, 
-                            [(genome, config,queue) for genome in genomes]
-                            )):
-                        genome[1].fitness = fitness/\
-                                            CONFIG_DETAILS["simulationSteps"]
+                            (genome, config, queue)
+                            ) for genome in genomes]
+                    
+                for job, (genID, genome) in zip(jobs, genomes,queue):
+                    genome.fitness = job.get(timeout=None)
+            #case 3:
+        elif case == 3:
+            print(f"Using starmap")
+            with mp.Pool(numWorkers) as pool:
+                for genome, fitness in zip(genomes, pool.starmap(
+                        self.fitnessFunc, 
+                        [(genome, config,queue) for genome in genomes]
+                        )):
+                    genome[1].fitness = fitness
+
+        elif case == 4:
+            print(f"using built-in")
+            worker = neat.parallel.ParallelEvaluator(numWorkers, self.fitnessFunc, timeout=None)
+            worker.evaluate(genomes, config)
 
 
-    def run(self, config=NEAT_CONFIG, 
-            numGen=CONFIG_DETAILS["numberOfGenerations"]
-        ):
-        if CONFIG_DETAILS["lastPopulationCheckpoint"]:
-            filepath = CONFIG_DETAILS["lastPopulationCheckpoint"]
+
+    def run(self,config=NEAT_CONFIG, useCheckpoint=False,numGen=None):
+        if numGen is None:
+            numGen = CONFIG_DETAILS["numberOfGenerations"]
+
+        pop = None
+
+        if CONFIG_DETAILS["useSpecificCheckpoint"]:
+            filepath = CONFIG_DETAILS["useSpecificCheckpoint"]
             with (filepath, "rb") as infile:
                 pop = pickle.load(infile)
-        else:
+
+        elif useCheckpoint:
+            outfilePath = f"{CONFIG_DETAILS['resultsFolder']}"\
+                        f"\{CONFIG_DETAILS['unityEnvironmentVersion']}"\
+                        f"\popcount{CONFIG_DETAILS['populationCount']}_"\
+                        f"simlength{CONFIG_DETAILS['simulationSteps']}_"
+            
+            if not os.path.exists(outfilePath):
+                os.makedirs(outfilePath)
+                            
+            pop, _ = self.findLatestGeneration()
+
+        if not pop:
             pop = neat.Population(config)
             pop.add_reporter(neat.StdOutReporter(False))
+        
+        if numGen == pop.generation:
+            raise Exception("Training started, but generation limit already "
+                            f"met or exceeded: {pop.generation} >= {numGen}")
+
+
 
         while pop.generation < numGen:
-            #TODO: print time of start
+            manager = mp.Manager()
+            queue = manager.Queue()
+
             bestBoi = pop.run(
                 self.evaluatePopulation, 
                 CONFIG_DETAILS["generationsBeforeSave"]
             )
 
-            outfilePath = f"{CONFIG_DETAILS['resultsFolder']}"\
-                          f"\{CONFIG_DETAILS['unityEnvironmentVersion']}"\
-                          f"\popcount{CONFIG_DETAILS['populationCount']}_"\
-                          f"simlength{CONFIG_DETAILS['simulationSteps']}_"
-                            
             outfileName = outfilePath +\
                           f"\generation_{str(pop.generation).zfill(4)}.pkl"
-            
-            if not os.path.exists(outfilePath):
-                os.makedirs(outfilePath)
             with open(outfileName, "wb") as outfile:
                 pickle.dump((pop, bestBoi), outfile)
 
         return pop, bestBoi
+    
+    def findLatestGeneration(self):
+        populationFolder = f"{CONFIG_DETAILS['resultsFolder']}"\
+                    f"\{CONFIG_DETAILS['unityEnvironmentVersion']}"\
+                    f"\popcount{CONFIG_DETAILS['populationCount']}_"\
+                    f"simlength{CONFIG_DETAILS['simulationSteps']}_"
+        fullFileList = os.listdir(populationFolder)
+        trueFileList = []
+        for generationFile in fullFileList:
+            generationFolderFile = os.path.join(populationFolder, generationFile)
+            if os.path.isfile(generationFolderFile):
+                trueFileList.append(generationFolderFile)
 
-    def demonstrateGenome(self, genomeFilePath, config):
-        with open(genomeFilePath, "rb") as infile:
-            population = pickle.load(infile)
-        if isinstance(population, tuple):
-            population, genome = population
-        elif isinstance(population, neat.population.Population):
-            raise NotImplemented
+        latestGeneration = (None, 0)
+
+        for generationFile in trueFileList:
+            genNumber = int(generationFile[-8:-4]) # generation_[xxxx].pkl
+            if genNumber > latestGeneration[1]:
+                latestGeneration = (generationFile, genNumber)
+                        
+        if latestGeneration[0]:
+            with open(latestGeneration[0], "rb") as infile: 
+                pop, bestSpecimen = pickle.load(infile)
+                return pop, bestSpecimen
+        else:
+            return (False, False)
+
+
+
+    def demonstrateGenome(self,genome,config=NEAT_CONFIG):
+        if isinstance(genome, str):
+            # Given as filepath
+            with open(genome, "rb") as infile:
+                population = pickle.load(infile)
+            if isinstance(population, tuple):
+                population, genome = population
+            elif isinstance(population, neat.population.Population):
+                raise NotImplemented
+        elif isinstance(genome, neat.genome.DefaultGenome):
+            # Given directly
+            pass
+        else:
+            pdb.set_trace()
+            raise TypeError("Genome not of demonstrable datatype")
 
         print("Please start environment")
-        env = UnityEnvironment()
+        env = UnityEnvironment(worker_id=0)
         print("Environment found")
 
         # fileName = f"{CONFIG_DETAILS['unityEnvironmentFilepath']}\\"\
@@ -233,27 +334,7 @@ class Learner():
         #     num_areas =  1
         # )
 
-        env.reset()
-        self.assertBehaviorNames(env)
-        behaviorNames = list(env.behavior_specs.keys())
-        behaviorName = behaviorNames[0]
-
-        network = neat.nn.FeedForwardNetwork.create(genome, config)
-
-        while True:
-            decisionSteps, other = env.get_steps(behaviorName)
-            printout = ""
-            for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-                action = np.array(network.activate(obs)).reshape(1,2)
-                printout += f"{obs} -> {action}\n"
-                env.set_action_for_agent(
-                    behaviorName, 
-                    id, 
-                    ActionTuple(np.array(action).reshape(1,2))
-                )
-            print(printout, end="\n\n")
-            # time.sleep(10)
-            env.step()
+        self.simulateGenome(genome,config,env)
 
 
     def assertBehaviorNames(self, env):
@@ -293,22 +374,34 @@ class Learner():
                 )
             env.step()
 
+    def makePDF(self):
+        
+        _, genome = self.findLatestGeneration()
+        draw_net(NEAT_CONFIG, genome, True)
 
+
+def debugFunc(a,b,c,d):
+    print(a,b,c,d)
+    return 5
 if __name__ == "__main__":
+    mp.freeze_support()
 
-    learner = Learner()
+    learner = Learner(CONFIG_DETAILS)
 
-    multiprocessing.freeze_support()
-    # finalGeneration, bestBoi = learner.run()    
-
-    # learner.motionTest()
-
-    learner.demonstrateGenome(
-        f"{CONFIG_DETAILS['resultsFolder']}\\"
-        f"{CONFIG_DETAILS['unityEnvironmentVersion']}\\"
-        "popcount24_simlength300_\\generation_0101.pkl", 
-        NEAT_CONFIG,
-        )
+    case = CONFIG_DETAILS["runMode"]
+    #match learner.CONFIG_DETAILS["runMode"]:
+    if case == 1:
+        #case 1:
+        finalGeneration, bestBoi = learner.run(useCheckpoint=True)    
+    elif case == 2:
+        #case 2:
+        learner.demonstrateGenome(learner.findLatestGeneration()[1])
+    elif case == 3:
+        #case 3:
+        learner.motionTest()
+    elif case == 4:
+        #case 4: 
+        learner.makePDF()
 
 
     # import winsound

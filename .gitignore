@@ -97,3 +97,5 @@ MonoBleedingEdge*
 *.assets
 *.resS
 /Bot locomotion*_Data
+*.gv
+*.svg
