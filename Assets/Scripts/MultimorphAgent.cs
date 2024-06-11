@@ -101,29 +101,6 @@ public class MultimorphAgent : Agent {
     }
 
     /// <summary>
-    /// Update is called once per frame
-    /// </summary>
-    void Update() {
-        // Reward is cumulated over time as horizontal displacement from origin
-        // Cumulative reward rewards high initial motion.
-        float reward;
-        string statement = "";
-        if (disqualified || transform.position[1] > disqualificationHeight){
-            disqualified = true;
-            reward = disqualificationPunishment;
-            statement = ", because it is DISQUALIFIED";
-        } else {
-            reward = rewardFactor*(float)Math.Sqrt(
-                Math.Pow(transform.position[0] - startPosition[0], 2)
-              + Math.Pow(transform.position[2] - startPosition[2], 2)
-                );
-        }
-        // Debug.Log("Reward added: " + reward + statement);
-        if (!float.IsNaN(reward)) {AddReward(reward);}
-        else {Debug.Log("Reward somehow became a NaN??");}
-    }
-
-    /// <summary>
     /// Reset the agent when an episode begins
     /// </summary>
     public override void OnEpisodeBegin() {
@@ -249,6 +226,24 @@ public class MultimorphAgent : Agent {
         // If there are fewer than 4 children, add empty readings
         sensor.AddObservation(new float[(4-childCount)*2]);
 
+
+        // Reward is cumulated over time as horizontal displacement from origin
+        // Cumulative reward rewards high initial motion.
+        float reward;
+        string statement = "";
+        if (disqualified || transform.position[1] > disqualificationHeight){
+            disqualified = true;
+            reward = disqualificationPunishment;
+            statement = ", because it is DISQUALIFIED";
+        } else {
+            reward = rewardFactor*(float)Math.Sqrt(
+                Math.Pow(transform.position[0] - startPosition[0], 2)
+              + Math.Pow(transform.position[2] - startPosition[2], 2)
+                );
+        }
+        Debug.Log("Reward added: " + reward + statement);
+        if (!float.IsNaN(reward)) {AddReward(reward);}
+        else {Debug.Log("Reward somehow became a NaN??");}
     }
 
     /// <summary>
