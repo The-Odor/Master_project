@@ -20,10 +20,10 @@ public class MultimorphAgent : Agent {
     double TAU;
     
     // Network output factors
-    float distanceSmoothingFactor = 1e3f;
-    float velocitySmoothingFactor = 1e3f;
-    float distanceScalingFactor = 1e3f;
-    float velocityScalingFactor = 1e3f;
+    float distanceSmoothingFactor = 4e1f;
+    float velocitySmoothingFactor = 4e1f;
+    float distanceScalingFactor = 1.8e2f;
+    float velocityScalingFactor = 1.8e2f;
     
     // Robot structural factors
     float stiffnessFactor = 1;
@@ -40,6 +40,7 @@ public class MultimorphAgent : Agent {
     float rewardFactor = 1e-3f;
     bool disqualified = false;
     float disqualificationHeight = 10;
+    float disqualificationPunishment = -1e3f;
 
     // Other variables
     ArticulationBody articulationBody; 
@@ -106,16 +107,18 @@ public class MultimorphAgent : Agent {
         // Reward is cumulated over time as horizontal displacement from origin
         // Cumulative reward rewards high initial motion.
         float reward;
+        string statement = "";
         if (disqualified || transform.position[1] > disqualificationHeight){
             disqualified = true;
-            reward = 0;
+            reward = disqualificationPunishment;
+            statement = ", because it is DISQUALIFIED";
         } else {
             reward = rewardFactor*(float)Math.Sqrt(
                 Math.Pow(transform.position[0] - startPosition[0], 2)
               + Math.Pow(transform.position[2] - startPosition[2], 2)
                 );
         }
-            
+        // Debug.Log("Reward added: " + reward + statement);
         if (!float.IsNaN(reward)) {AddReward(reward);}
         else {Debug.Log("Reward somehow became a NaN??");}
     }
@@ -267,30 +270,28 @@ public class MultimorphAgent : Agent {
                 RotateAction(actions.ContinuousActions[0], actions.ContinuousActions[1]);
             } else {Debug.Log("Mooooom, the network output a NaaaaN!!");}
         }
-
-        // SmoothDistanceChange = Mathf.MoveTowards(SmoothDistanceChange, actions.ContinuousActions[0]*distanceFactor, 2f * Time.fixedDeltaTime);
-        // SmoothVelocityChange = Mathf.MoveTowards(SmoothVelocityChange, actions.ContinuousActions[1]*velocityFactor, 2f * Time.fixedDeltaTime);
-            // SmoothDistanceChange + articulationBody.jointPosition[0], 
-            // SmoothVelocityChange);
+        Debug.Log(actions.ContinuousActions[0] + ", " + actions.ContinuousActions[1]);
     }
 
     // Trying to copy from the ArmController, using some of their helpers
     private void RotateAction(float targetAngleNormalized, float targetVelocityNormalized) {
         // A bigger motion is made faster
-        // SmoothDistanceChange = Mathf.MoveTowards(
-        //     SmoothDistanceChange, 
-        //     targetAngleNormalized*distanceSmoothingFactor, 
-        //     distanceScalingFactor*Math.Abs(targetAngleNormalized - SmoothDistanceChange)*Time.fixedDeltaTime
-        // );
-        // SmoothVelocityChange = Mathf.MoveTowards(
-        //     SmoothVelocityChange, 
-        //     targetAngleNormalized*velocitySmoothingFactor, 
-        //     velocityScalingFactor*Math.Abs(targetVelocityNormalized - SmoothVelocityChange)*Time.fixedDeltaTime
-        // );
+        // Scaled linearly by distanceScalingFactor and the difference
+        // between current angle and target angle
+        SmoothDistanceChange = Mathf.MoveTowards(
+            SmoothDistanceChange, 
+            targetAngleNormalized*distanceScalingFactor, 
+            distanceSmoothingFactor*Math.Abs(targetAngleNormalized - SmoothDistanceChange)*Time.fixedDeltaTime
+        );
+        SmoothVelocityChange = Mathf.MoveTowards(
+            SmoothVelocityChange, 
+            targetAngleNormalized*velocityScalingFactor, 
+            velocitySmoothingFactor*Math.Abs(targetVelocityNormalized - SmoothVelocityChange)*Time.fixedDeltaTime
+        );
                 
         // Until we think we need the actual smoothing, we're going to just make it work like this
-        SmoothDistanceChange = targetAngleNormalized * distanceSmoothingFactor;
-        SmoothVelocityChange = targetVelocityNormalized * velocitySmoothingFactor;
+        // SmoothDistanceChange = targetAngleNormalized * distanceSmoothingFactor;
+        // SmoothVelocityChange = targetVelocityNormalized * velocitySmoothingFactor;
         
         var drive = articulationBody.xDrive;
         drive.stiffness = stiffnessFactor;
