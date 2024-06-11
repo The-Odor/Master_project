@@ -25,7 +25,7 @@ from visualize import draw_net
 CONFIG_DETAILS = {
     "unityEnvironmentFilepath": r"C:\Users\theod\Master_project",
     "unityEnvironmentName": "Bot locomotion",
-    "unityEnvironmentVersion": ".0.4",
+    "unityEnvironmentVersion": ".0.5",
     # "unityEnvironmentVersion": ".test",
     "configFilepath": r"C:\Users\theod\Master_project"
                       r"\Pythonscripts\configs\NEATconfig",
@@ -105,7 +105,8 @@ class Learner():
             observations = []
             for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                 observations.extend(obs)
-            action = np.array(network.activate(observations)).reshape(1,12)
+            action = np.array(network.activate(observations)).reshape(1,12)*2-1
+            # Action is sigmoid with range moved from [0,1] to [-1,1]
             
             for i, id in enumerate(decisionSteps.agent_id):
 
@@ -113,11 +114,17 @@ class Learner():
                     behaviorName, id, 
                     ActionTuple(np.array(action[0][i*2:(i+1)*2]).reshape(1,2))
                     )
+            
             reward +=sum(decisionSteps.reward) / len(decisionSteps.reward)
+            if reward <= -1000: # Large negative numbers means disqualification
+                reward -= 1000 * (simulationSteps - t)
+                break
+
             env.step()
         env.close()
         reward /= (CONFIG_DETAILS["simulationSteps"])
-        print(f"Reward given to {genID} as {reward}; last instance was ({', '.join(str(round(i,2)) for i in decisionSteps.reward)})")
+        print(f"Reward given to {genID} as {reward:.2g}; last instance was "
+              f"({', '.join(str(round(i,2)) for i in decisionSteps.reward)})")
 
         # print(f"genome {genID} sucessfully simulated")
         return reward
@@ -223,7 +230,7 @@ class Learner():
             if not os.path.exists(outfilePath):
                 os.makedirs(outfilePath)
                             
-            pop, _ = self.findLatestGeneration()
+            pop, _ = self.findGeneration()
 
         if not pop:
             pop = neat.Population(config)
@@ -251,7 +258,7 @@ class Learner():
 
         return pop, bestBoi
     
-    def findLatestGeneration(self):
+    def findGeneration(self, specificGeneration = None):
         populationFolder = f"{CONFIG_DETAILS['resultsFolder']}"\
                     f"\{CONFIG_DETAILS['unityEnvironmentVersion']}"\
                     f"\popcount{CONFIG_DETAILS['populationCount']}_"\
@@ -263,15 +270,16 @@ class Learner():
             if os.path.isfile(generationFolderFile):
                 trueFileList.append(generationFolderFile)
 
-        latestGeneration = (None, 0)
+        Generation = (None, 0)
 
         for generationFile in trueFileList:
             genNumber = int(generationFile[-8:-4]) # generation_[xxxx].pkl
-            if genNumber > latestGeneration[1]:
-                latestGeneration = (generationFile, genNumber)
+            if (genNumber > Generation[1] and specificGeneration is None)\
+            or (genNumber == specificGeneration):
+                Generation = (generationFile, genNumber)
                         
-        if latestGeneration[0]:
-            with open(latestGeneration[0], "rb") as infile: 
+        if Generation[0]:
+            with open(Generation[0], "rb") as infile: 
                 pop, bestSpecimen = pickle.load(infile)
                 return pop, bestSpecimen
         else:
@@ -358,7 +366,7 @@ class Learner():
 
     def makePDF(self, genome=None):
         if genome is None:
-            _, genome = self.findLatestGeneration()
+            _, genome = self.findGeneration()
         draw_net(NEAT_CONFIG, genome, True)
 
 
@@ -376,7 +384,8 @@ if __name__ == "__main__":
     elif case == 2:
         # case 2:
         # Demonstrates Genomes (hence name, lol)
-        learner.demonstrateGenome(learner.findLatestGeneration()[1])
+        # learner.demonstrateGenome(learner.findGeneration()[1])
+        learner.demonstrateGenome(learner.findGeneration(specificGeneration=69)[1])
     elif case == 3:
         # case 3:
         # Demonstrates simple motion in Unity editor
