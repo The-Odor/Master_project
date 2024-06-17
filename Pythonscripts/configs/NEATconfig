@@ -1,5 +1,13 @@
+### Details worthy of studying:
+# feed_forwards/recurrency can cause complext behaviour
+# speciation (and elitism?) can cause widespread behaviour
+## Other details not contained in NEATconfig:
+# Neuromodulation
+# Non-monolithic approach, even just as comparison
+# Individually trained networks as a baseline for comparison
+
 [NEAT]
-pop_size = 120
+pop_size = 360
 no_fitness_termination = True
 fitness_criterion = max
 fitness_threshold = 0
@@ -7,14 +15,14 @@ reset_on_extinction = False
 
 [DefaultGenome]
 # Network options
-num_inputs = 12
-num_outputs = 2
-num_hidden = 2
+num_inputs = 72
+num_outputs = 12
+num_hidden = 12
 
 # Activation options
 activation_mutate_rate = 0.5
-activation_options = identity
-activation_default = identity
+activation_options = sigmoid
+activation_default = sigmoid
 
 # Aggregation options
 aggregation_mutate_rate = 0.5
@@ -35,22 +43,22 @@ compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient = 0.5
 
 # Connection options
-conn_add_prob = 0.5
-conn_delete_prob = 0.5
+conn_add_prob = 0.8
+conn_delete_prob = 0.8
 
 # Node options
-node_add_prob = 0.2
-node_delete_prob = 0.21
+node_add_prob = 0.5
+node_delete_prob = 0.5
 
 # Layer options
-layer_add_prob = 0.01
-layer_delete_prob = 0.011
+layer_add_prob = 0.05
+layer_delete_prob = 0.05
 
 # Connection enablement options
 enabled_default = True
 enabled_mutate_rate = 0.01
-feed_forward = True
-initial_connection = full_direct
+feed_forward = False
+initial_connection = unconnected
 
 # Weight options
 weight_init_mean = 0
@@ -79,5 +87,5 @@ species_fitness_func = max
 species_elitism = 2
 
 [DefaultReproduction]
-elitism = 2
+elitism = 18
 survival_threshold = 0.2

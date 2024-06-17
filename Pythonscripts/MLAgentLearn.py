@@ -1,3 +1,4 @@
+# print("MLAgentLearn.py RELOADED FROM SCRATCH AT THIS VERY MOMENT")
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
 import numpy as np
@@ -29,18 +30,16 @@ CONFIG_DETAILS = {
     # "unityEnvironmentVersion": ".test",
     "configFilepath": r"C:\Users\theod\Master_project"
                       r"\Pythonscripts\configs\NEATconfig",
-    "simulationSteps": 300,
+    "simulationSteps": 40*20, # 20 steps per second
     "unitySeed": lambda : 5,#random.randint(1, 1000),  # Is called
     "PythonSeed": lambda : 5,#random.randint(1, 1000), # Is called
     "processingMode": 3, #serial, list-based parallel, starmap-based parallel
     "runMode": 1, # Train, Demonstrate genome, Demonstrate physics, make PDF
     "parallelWorkers": 12,
     "numberOfGenerations": 101,
-    "simulationTimeout": 1800, # In seconds; 1800 seconds is half an hour
+    "simulationTimeout": 120, # In seconds
     "generationsBeforeSave": 1,
     "resultsFolder": r"C:\Users\theod\Master_project\Populations",
-    # "useSpecificCheckpoint": r"C:\Users\theod\Master_project\Populations"
-    #                         r"\popcount_24_simlength600_generation_100.pkl",
     "useSpecificCheckpoint": None, # Will overwrite natural checkpoint
 
 }
@@ -101,7 +100,7 @@ class Learner():
         network = neat.nn.FeedForwardNetwork.create(gen, config)
         reward = 0
         for t in range(simulationSteps):
-            decisionSteps, other = env.get_steps(behaviorName)
+            decisionSteps, _ = env.get_steps(behaviorName)
             observations = []
             for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                 observations.extend(obs)
@@ -120,11 +119,17 @@ class Learner():
                 reward -= 1000 * (simulationSteps - t)
                 break
 
+            # print(action)
+
             env.step()
         env.close()
         reward /= (CONFIG_DETAILS["simulationSteps"])
-        print(f"Reward given to {genID} as {reward:.2g}; last instance was "
-              f"({', '.join(str(round(i,2)) for i in decisionSteps.reward)})")
+        if reward > 0:
+            print(f"Reward given to {genID:<3} as {reward:.2g}; last instance was "
+                f"({', '.join(str(round(i,2)) for i in decisionSteps.reward)})")
+        else:
+            print(f"Reward given to {genID:<3} as {reward:.2g}; "
+                  "last instance was DISQUALIFIED")
 
         # print(f"genome {genID} sucessfully simulated")
         return reward
@@ -132,8 +137,8 @@ class Learner():
     def fitnessFunc(self,genome,config,queue):
         # return self.fitnessFuncTest(genome,config)
 
-    
         worker_id = queue.get()
+    
         if CONFIG_DETAILS["unityEnvironmentFilepath"]:
             fileName = f"{CONFIG_DETAILS['unityEnvironmentFilepath']}\\"\
                        f"{CONFIG_DETAILS['unityEnvironmentName']}"\
@@ -148,15 +153,14 @@ class Learner():
             )
         else:
             print("Please start environment")
-            env = UnityEnvironment()
+            env = UnityEnvironment(seed=CONFIG_DETAILS["unitySeed"]())
             print("Environment found")
+
         env.reset()
-
         fitnessResult = self.simulateGenome(genome,config,env)
+
         queue.put(worker_id)
-
         return fitnessResult
-
 
 
     def evaluatePopulation(self,genomes,config,numWorkers=None):
@@ -229,7 +233,7 @@ class Learner():
             
             if not os.path.exists(outfilePath):
                 os.makedirs(outfilePath)
-                            
+
             pop, _ = self.findGeneration()
 
         if not pop:
@@ -243,8 +247,6 @@ class Learner():
 
 
         while pop.generation < numGen:
-            manager = mp.Manager()
-            queue = manager.Queue()
 
             bestBoi = pop.run(
                 self.evaluatePopulation, 
@@ -258,11 +260,13 @@ class Learner():
 
         return pop, bestBoi
     
-    def findGeneration(self, specificGeneration = None):
+    def findGeneration(self, specificGeneration = None, config=NEAT_CONFIG):
         populationFolder = f"{CONFIG_DETAILS['resultsFolder']}"\
                     f"\{CONFIG_DETAILS['unityEnvironmentVersion']}"\
                     f"\popcount{CONFIG_DETAILS['populationCount']}_"\
                     f"simlength{CONFIG_DETAILS['simulationSteps']}_"
+        if not os.path.exists(populationFolder):
+            os.makedirs(populationFolder)
         fullFileList = os.listdir(populationFolder)
         trueFileList = []
         for generationFile in fullFileList:
@@ -281,13 +285,18 @@ class Learner():
         if Generation[0]:
             with open(Generation[0], "rb") as infile: 
                 pop, bestSpecimen = pickle.load(infile)
+                print(f"Loaded generation from {Generation[0]}\n"
+                      f"Winner genome has complexity {bestSpecimen.size()}")
                 return pop, bestSpecimen
         else:
-            return (False, False)
+            pop = neat.Population(config)
+            pop.add_reporter(neat.StdOutReporter(False))
+
+            return (pop, None)
 
 
 
-    def demonstrateGenome(self,genome,config=NEAT_CONFIG):
+    def demonstrateGenome(self,genome=None,config=NEAT_CONFIG):
         if isinstance(genome, str):
             # Given as filepath
             with open(genome, "rb") as infile:
@@ -299,13 +308,27 @@ class Learner():
         elif isinstance(genome, neat.genome.DefaultGenome):
             # Given directly
             pass
+        elif genome is None:
+            _, genome = self.findGeneration()
+        elif isinstance(genome, int):
+            _, genome = self.findGeneration(specificGeneration=genome)
         else:
             pdb.set_trace()
             raise TypeError("Genome not of demonstrable datatype")
 
-        print("Please start environment")
-        env = UnityEnvironment(worker_id=0)
-        print("Environment found")
+        # print("Please start environment")
+        if CONFIG_DETAILS["unityEnvironmentFilepath"]:
+            fileName = f"{CONFIG_DETAILS['unityEnvironmentFilepath']}\\"\
+                       f"{CONFIG_DETAILS['unityEnvironmentName']}"\
+                       f"{CONFIG_DETAILS['unityEnvironmentVersion']}.exe"
+        env = UnityEnvironment(
+            file_name=fileName,  
+            worker_id=0,
+            seed=CONFIG_DETAILS["unitySeed"]()
+            )
+        # print("Environment found")
+
+
 
         # fileName = f"{CONFIG_DETAILS['unityEnvironmentFilepath']}\\"\
         #             f"{CONFIG_DETAILS['unityEnvironmentName']}"\
@@ -384,8 +407,8 @@ if __name__ == "__main__":
     elif case == 2:
         # case 2:
         # Demonstrates Genomes (hence name, lol)
-        # learner.demonstrateGenome(learner.findGeneration()[1])
-        learner.demonstrateGenome(learner.findGeneration(specificGeneration=69)[1])
+        learner.demonstrateGenome(learner.findGeneration()[1])
+        # learner.demonstrateGenome(learner.findGeneration(specificGeneration=69)[1])
     elif case == 3:
         # case 3:
         # Demonstrates simple motion in Unity editor
