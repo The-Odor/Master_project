@@ -30,11 +30,11 @@ CONFIG_DETAILS = {
     # "unityEnvironmentVersion": ".test",
     "configFilepath": r"C:\Users\theod\Master_project"
                       r"\Pythonscripts\configs\NEATconfig",
-    "simulationSteps": 40*20, # 20 steps per second
+    "simulationSteps": 30*20, # 20 steps per second
     "unitySeed": lambda : 5,#random.randint(1, 1000),  # Is called
     "PythonSeed": lambda : 5,#random.randint(1, 1000), # Is called
     "processingMode": 3, #serial, list-based parallel, starmap-based parallel
-    "runMode": 1, # Train, Demonstrate genome, Demonstrate physics, make PDF
+    "runMode": 3, # Train, Demonstrate genome, Demonstrate physics, make PDF
     "parallelWorkers": 12,
     "numberOfGenerations": 101,
     "simulationTimeout": 120, # In seconds
@@ -378,6 +378,7 @@ class Learner():
                 action = (1,1)
             else:
                 action = 2*(T % motionDuration) / motionDuration - 1
+                action = action/abs(action)
                 action = (action, action)
             for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                 env.set_action_for_agent(
@@ -385,6 +386,7 @@ class Learner():
                     id, 
                     ActionTuple(np.array(action).reshape(1,2))
                 )
+                print(f"Sent action {action}")
             env.step()
 
     def makePDF(self, genome=None):

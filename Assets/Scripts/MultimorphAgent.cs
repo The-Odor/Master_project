@@ -20,10 +20,10 @@ public class MultimorphAgent : Agent {
     double TAU;
     
     // Network output factors
-    float distanceSmoothingFactor = 4e1f;
-    float velocitySmoothingFactor = 4e1f;
-    float distanceScalingFactor = 1.8e2f;
-    float velocityScalingFactor = 1.8e2f;
+    float angleChangeFactor = 1e0f;
+    float velocityChangeFactor = 1e1f;
+    float angleScalingFactor = 1.8e2f;
+    float velocityScalingFactor = 4e2f;
     
     // Robot structural factors
     float stiffnessFactor = 1;
@@ -33,11 +33,11 @@ public class MultimorphAgent : Agent {
     float angleLowerLimit = -60;
 
     // Movement variables
-    float SmoothDistanceChange;
-    float SmoothVelocityChange;
+    float currentTargetAngle;
+    float currentTargetVelocity;
 
     // Training variables
-    float rewardFactor = 1e-3f;
+    float rewardFactor = 1e-1f;
     bool disqualified = false;
     float disqualificationHeight = 10;
     float disqualificationPunishment = -1e3f;
@@ -73,8 +73,8 @@ public class MultimorphAgent : Agent {
 
         MaxStep = 6400;
 
-        SmoothDistanceChange = 0f;
-        SmoothVelocityChange = 0f;
+        currentTargetAngle = 0f;
+        currentTargetVelocity = 0f;
 
         startPosition = this.transform.position;
         startRotation = this.transform.rotation;
@@ -265,41 +265,42 @@ public class MultimorphAgent : Agent {
                 RotateAction(actions.ContinuousActions[0], actions.ContinuousActions[1]);
             } else {Debug.Log("Mooooom, the network output a NaaaaN!!");}
         }
-        Debug.Log(actions.ContinuousActions[0] + ", " + actions.ContinuousActions[1]);
     }
 
     // Trying to copy from the ArmController, using some of their helpers
-    private void RotateAction(float targetAngleNormalized, float targetVelocityNormalized) {
+    private void RotateAction(float newTargetAngleNormalized, float newTargetVelocityNormalized) {
         // A bigger motion is made faster
-        // Scaled linearly by distanceScalingFactor and the difference
+        // Scaled linearly by angleScalingFactor and the difference
         // between current angle and target angle
-        SmoothDistanceChange = Mathf.MoveTowards(
-            SmoothDistanceChange, 
-            targetAngleNormalized*distanceScalingFactor, 
-            distanceSmoothingFactor*Math.Abs(targetAngleNormalized - SmoothDistanceChange)*Time.fixedDeltaTime
+        float newTargetAngle = newTargetAngleNormalized * angleScalingFactor;
+        float newTargetVelocity = newTargetVelocityNormalized * velocityScalingFactor;
+        currentTargetAngle = Mathf.MoveTowards(
+            currentTargetAngle, 
+            newTargetAngle, 
+            Math.Abs(newTargetAngle - currentTargetAngle)*angleChangeFactor*Time.fixedDeltaTime
         );
-        SmoothVelocityChange = Mathf.MoveTowards(
-            SmoothVelocityChange, 
-            targetAngleNormalized*velocityScalingFactor, 
-            velocitySmoothingFactor*Math.Abs(targetVelocityNormalized - SmoothVelocityChange)*Time.fixedDeltaTime
+        currentTargetVelocity = Mathf.MoveTowards(
+            currentTargetVelocity, 
+            newTargetVelocity, 
+            Math.Abs(newTargetVelocity - currentTargetVelocity)*velocityChangeFactor*Time.fixedDeltaTime
         );
                 
         // Until we think we need the actual smoothing, we're going to just make it work like this
-        // SmoothDistanceChange = targetAngleNormalized * distanceSmoothingFactor;
-        // SmoothVelocityChange = targetVelocityNormalized * velocitySmoothingFactor;
+        // currentTargetAngle = newTargetAngleNormalized * angleChangeFactor;
+        // currentTargetVelocity = newTargetVelocityNormalized * velocityChangeFactor;
         
         var drive = articulationBody.xDrive;
         drive.stiffness = stiffnessFactor;
         drive.damping = dampingFactor;
         drive.forceLimit = forceLimitFactor;
 
-        drive.target = SmoothDistanceChange;// + articulationBody.jointPosition[0];
-        drive.targetVelocity = SmoothVelocityChange;
+        drive.target = currentTargetAngle;// + articulationBody.jointPosition[0];
+        drive.targetVelocity = currentTargetVelocity;
         // drive.targetVelocity = 0;
         
         articulationBody.xDrive = drive;
         
-        // Debug.Log("drive.target/targetVelocity set to: " + articulationBody.xDrive.target + "; " + articulationBody.xDrive.targetVelocity);
+        // Debug.Log("drive.target/newTargetVelocity set to: " + articulationBody.xDrive.target + "; " + articulationBody.xdrive.targetVelocity);
 
         // Fault: Only works on root
         // articulationBody.SetDriveTargets(new List<float> {target});

@@ -52,9 +52,6 @@ ExportedObj/
 *.pdb.meta
 *.mdb.meta
 
-# Generated meta files - general
-*.meta
-
 # Venv
 venv/*
 
@@ -83,19 +80,8 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
-# misc stuff I can't categorize
-*.dll
-*.pkl
-Bot locomotion_data*
-Bot locomotion_BurstDebugInformation_DoNotShip*
-MonoBleedingEdge*
-*.json
-*.exe
-*.asset
-*.json
-*.pyc
-*.assets
-*.resS
-/Bot locomotion*_Data
+# Python-generated files
 *.gv
 *.svg
+*.pkl
+*.pyc

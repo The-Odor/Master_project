@@ -5,10 +5,10 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     public Transform[] objectsToFollow; // List of objects to follow
-    [Range(0,100)]
+    [Range(0,22)]
     public float minDistance = 5f; // Slider for adjusting minimum distance
     public float smoothSpeed = 0.125f; // Smoothing factor for camera movement
-    public Vector3 offset = new Vector3(0, 2, -10); // Offset from the object
+    public Vector3 offset = new Vector3(0, 10, 10); // Offset from the object
 
     private Transform target; // Current target object
     private int objectIndex = 0;
@@ -34,7 +34,7 @@ public class CameraFollow : MonoBehaviour
             // Update the target object based on key presses
             if (Input.GetKeyDown(KeyCode.Q))
             {
-                // Handle case where index turns negative
+                // Handle underflow case
                 if(objectIndex == 0)
                     objectIndex = objectsToFollow.Length - 1;
 
@@ -61,7 +61,7 @@ public class CameraFollow : MonoBehaviour
             {
                 // Calculate new position with minimum distance
                 Vector3 direction = (
-                    transform.position - desiredPosition).normalized;
+                    desiredPosition - transform.position).normalized;
                 desiredPosition = target.position + direction * minDistance;
             }
 
