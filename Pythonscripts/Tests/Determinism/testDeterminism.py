@@ -89,7 +89,7 @@ class VaryingLearner(Learner):
 
         self.assertBehaviorNames(env)
         behaviorName = list(env.behavior_specs.keys())[0]
-        network = neat.nn.FeedForwardNetwork.create(gen, config)
+        network = neat.nn.RecurrentNetwork.create(gen, config)
         reward = 0
 
         for t in range(simulationSteps):

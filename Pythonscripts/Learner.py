@@ -30,7 +30,7 @@ class Learner():
 
     def fitnessFuncTest(self,genome,config):
         _, gen = genome 
-        network = neat.nn.FeedForwardNetwork.create(gen, config)
+        network = neat.nn.RecurrentNetwork.create(gen, config)
 
         mode = 1
         if mode == 1:
@@ -58,7 +58,7 @@ class Learner():
         behaviorNames = list(env.behavior_specs.keys())
         behaviorName = behaviorNames[0]
 
-        network = neat.nn.FeedForwardNetwork.create(gen, config)
+        network = neat.nn.RecurrentNetwork.create(gen, config)
         reward = 0
         for t in range(simulationSteps):
             decisionSteps, _ = env.get_steps(behaviorName)
