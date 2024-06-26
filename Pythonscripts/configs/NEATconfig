@@ -1,9 +1,10 @@
 ### Details worthy of studying:
-# feed_forwards/recurrency can cause complext behaviour
+# feed_forwards/recurrency can cause complex behaviour
 # speciation (and elitism?) can cause widespread behaviour
 ## Other details not contained in NEATconfig:
-# Neuromodulation
-# Non-monolithic approach, even just as comparison
+# Neuromodulation (secondary network, using shape of 
+#                  morphologies ((njoints,) perhaps?))
+# Non-monolithic approach, based in Henriks work
 # Individually trained networks as a baseline for comparison
 
 [NEAT]
@@ -39,7 +40,10 @@ bias_max_value = 30
 bias_min_value =-30
 
 # Compatibility options
-compatibility_disjoint_coefficient = 1.0
+# compatibility_disjoint_coefficient = BOTH disjoint AND excess
+# compatibility_disjoint_coefficient = 1.0 
+# Scaled for increase in network size
+compatibility_disjoint_coefficient = 0.02 
 compatibility_weight_coefficient = 0.5
 
 # Connection options
@@ -58,7 +62,8 @@ layer_delete_prob = 0.05
 enabled_default = True
 enabled_mutate_rate = 0.01
 feed_forward = False
-initial_connection = unconnected
+initial_connection = full_nodirect
+; initial_connection = unconnected
 
 # Weight options
 weight_init_mean = 0
