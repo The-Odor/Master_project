@@ -1,6 +1,7 @@
 # print("MLAgentLearn.py RELOADED FROM SCRATCH AT THIS VERY MOMENT")
 from mlagents_envs.base_env import ActionTuple
 from mlagents_envs.environment import UnityEnvironment
+from tqdm import tqdm
 import numpy as np
 # import torch
 # import torch.nn as nn
@@ -25,7 +26,7 @@ class Learner():
             neat.DefaultSpeciesSet,
             neat.DefaultStagnation,
             self.CONFIG_DETAILS["configFilepath"]
-            )
+        )
         pass
 
     def fitnessFuncTest(self,genome,config):
@@ -39,7 +40,6 @@ class Learner():
             fitness = -(((network.activate([1,]*72) - (np.arange(12)/12))**2).sum())
 
         return fitness
-
 
     def simulateGenome(self, genome,config,env,simulationSteps=None):
         if simulationSteps is None:
@@ -85,14 +85,13 @@ class Learner():
             env.step()
         env.close()
         reward /= (self.CONFIG_DETAILS.getint("simulationSteps"))
-        if reward > 0:
-            print(f"Reward given to {genID:<3} as {reward:.2g}; last instance was "
-                f"({', '.join(str(round(i,2)) for i in decisionSteps.reward)})")
-        else:
-            print(f"Reward given to {genID:<3} as {reward:.2g}; "
-                  "last instance was DISQUALIFIED")
+        # if reward > 0:
+        #     print(f"Reward given to {genID:<3} as {reward:.2g}; last instance was "
+        #         f"({', '.join(str(round(i,2)) for i in decisionSteps.reward)})")
+        # else:
+        #     print(f"Reward given to {genID:<3} as {reward:.2g}; "
+        #           "last instance was DISQUALIFIED")
 
-        # print(f"genome {genID} sucessfully simulated")
         return reward
         
     def fitnessFunc(self,genome,config,queue):
@@ -117,11 +116,18 @@ class Learner():
             print("Environment found")
 
         env.reset()
-        fitnessResult = self.simulateGenome(genome,config,env)
+        reward = self.simulateGenome(genome,config,env)
 
         queue.put(worker_id)
-        return fitnessResult
 
+        # if reward > 0:
+        #     print(f"{reward:.1e}", end=", ")
+        # else:
+        #     print(f"DISC", end=", ")
+
+        # print(f"genome {genID} sucessfully simulated")
+
+        return reward
 
     def evaluatePopulation(self,genomes,config,numWorkers=None):
 
@@ -159,20 +165,28 @@ class Learner():
                     genome.fitness = job.get(timeout=None)
             #case 3:
         elif case == 3:
-            print(f"Using starmap")
+            print(f"Using imap")
+            print("Rewards given: ", end="")
+            # self.SimulateGenome prints reward as print(f"{reward:.1e}", end=", ")
             with mp.Pool(numWorkers) as pool:
-                for genome, fitness in zip(genomes, pool.starmap(
-                        self.fitnessFunc, 
+                for genome, fitness in zip(genomes, tqdm(pool.imap(
+                        self.fitnessFuncMapper, 
                         [(genome, config,queue) for genome in genomes]
-                        )):
+                        ), total=len(genomes)-1, bar_format="{l_bar}{bar:20}{r_bar}")):
                     genome[1].fitness = fitness
+                    # The total has to be reduced by 1... for _some_ reason....
 
         elif case == 4:
             print(f"using built-in")
             worker = neat.parallel.ParallelEvaluator(numWorkers, self.fitnessFunc, timeout=None)
             worker.evaluate(genomes, config)
 
+        # print() # End the rewards printing with \n
 
+    def fitnessFuncMapper(self, arg):
+        """
+        Wraps self.fitnessFunc to allow single-argument Pool.imap"""
+        return self.fitnessFunc(*arg)
 
     def run(self,config=None, useCheckpoint=False,numGen=None):
         if config is None:
@@ -223,6 +237,7 @@ class Learner():
                           f"\generation_{str(pop.generation).zfill(4)}.pkl"
             with open(outfileName, "wb") as outfile:
                 pickle.dump((pop, bestBoi), outfile)
+                print(f"Saved generation to {outfileName}")
 
 
 
@@ -265,8 +280,6 @@ class Learner():
             pop.add_reporter(neat.StdOutReporter(False))
 
             return (pop, None)
-
-
 
     def demonstrateGenome(self,genome=None,config=None):
         if config is None:
@@ -323,15 +336,13 @@ class Learner():
 
         self.simulateGenome(genome,config,env)
 
-
     def assertBehaviorNames(self, env):
         assert len(list(env.behavior_specs.keys())) == 1,\
          (f"There is not exactly 1 behaviour in the "
           f"Unity environment: {list(env.behavior_specs.keys())}")
 
-
-    # Applies basic motion for visual evaluation of physical rules
     def motionTest(self):
+        # Applies basic motion for visual evaluation of physical rules
         print("Please start environment")
         env = UnityEnvironment()
         print("Environment found")
