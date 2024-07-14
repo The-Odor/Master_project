@@ -13,8 +13,8 @@ num_hidden = 12
 
 # Activation options
 activation_mutate_rate = 0.5
-activation_options = sigmoid
-activation_default = sigmoid
+activation_options = tanh
+activation_default = tanh
 
 # Aggregation options
 aggregation_mutate_rate = 0.5

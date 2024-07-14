@@ -62,8 +62,8 @@ layer_delete_prob = 0.05
 enabled_default = True
 enabled_mutate_rate = 0.01
 feed_forward = False
-initial_connection = full_nodirect
-; initial_connection = unconnected
+; initial_connection = full_nodirect
+initial_connection = unconnected
 
 # Weight options
 weight_init_mean = 0
@@ -85,12 +85,12 @@ response_min_value =-30
 
 
 [DefaultSpeciesSet]
-compatibility_threshold = 3.0
+compatibility_threshold = 1.0
 
 [DefaultStagnation]
 species_fitness_func = max
 species_elitism = 2
 
 [DefaultReproduction]
-elitism = 18
+elitism = 0
 survival_threshold = 0.2

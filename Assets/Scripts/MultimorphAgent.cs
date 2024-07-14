@@ -50,6 +50,7 @@ public class MultimorphAgent : Agent {
     Vector3 rootStartPosition;
     Quaternion rootStartRotation;
     DateTime timeEpisodeStart;
+    GameObject UIText;
 
     /// <summary>
     /// Initialize the agent
@@ -87,6 +88,9 @@ public class MultimorphAgent : Agent {
             rootStartRotation = rootObject.transform.rotation;
         }
 
+
+        UIText = GameObject.Find("UI/Canvas/WindowVersion/Text");
+        if (UIText is null) {throw new Exception("UI not found");}
         
 
         // Fault: These properties are documented, but don't exist
@@ -244,6 +248,12 @@ public class MultimorphAgent : Agent {
         Debug.Log("Reward added: " + reward + statement);
         if (!float.IsNaN(reward)) {AddReward(reward);}
         else {Debug.Log("Reward somehow became a NaN??");}
+
+        // UI Update section
+        if (this.transform.name == "gecko_v1_root_link0") {
+            TMPro.TextMeshProUGUI mText = UIText.GetComponent<TMPro.TextMeshProUGUI>();
+            mText.text = transform.position.ToString();
+        }
     }
 
     /// <summary>
@@ -277,12 +287,12 @@ public class MultimorphAgent : Agent {
         currentTargetAngle = Mathf.MoveTowards(
             currentTargetAngle, 
             newTargetAngle, 
-            Math.Abs(newTargetAngle - currentTargetAngle)*angleChangeFactor*Time.fixedDeltaTime
+            Math.Abs(newTargetAngle - currentTargetAngle)*angleChangeFactor//*Time.fixedDeltaTime
         );
         currentTargetVelocity = Mathf.MoveTowards(
             currentTargetVelocity, 
             newTargetVelocity, 
-            Math.Abs(newTargetVelocity - currentTargetVelocity)*velocityChangeFactor*Time.fixedDeltaTime
+            Math.Abs(newTargetVelocity - currentTargetVelocity)*velocityChangeFactor//*Time.fixedDeltaTime
         );
                 
         // Until we think we need the actual smoothing, we're going to just make it work like this
@@ -307,6 +317,8 @@ public class MultimorphAgent : Agent {
         
         // Fault: Will spin entire body
         // articulationBody.AddRelativeTorque(primaryAxisRotation * new Vector3(1,0,0));
+
+        // Physics.Simulate(Time.fixedDeltaTime);
     }
 }
 

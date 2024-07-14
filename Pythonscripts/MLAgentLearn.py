@@ -28,7 +28,7 @@ CONFIG_DETAILS["populationFolder"] = (
 
 
 
-random.seed(CONFIG_DETAILS["PythonSeed"])
+# random.seed(CONFIG_DETAILS["PythonSeed"])
 
 
 if __name__ == "__main__":

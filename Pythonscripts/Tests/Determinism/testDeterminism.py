@@ -17,17 +17,18 @@ CONFIG_DETAILS = configparser.ConfigParser()
 CONFIG_DETAILS["DEFAULT"] = {
     "simulationSteps": 600,
     "unitySeed": 5,
-    "simulationTimeout": 120,
+    "simulationTimeout": 220,
     "parallelWorkers": 24,
-    "processingMode": 1,
-    "numberOfGenerations": 101,
-    "unityEnvironmentVersion": "VaryingGenomes",
+    "processingMode": 3,
+    "numberOfGenerations": 1001,
+    # "unityEnvironmentVersion": "VaryingGenomes",
     "populationCount": 360,
     "generationsBeforeSave": 1,
 }
 
 CONFIG_DETAILS["DEFAULT"]["exeFilePath"] = (
-    "C:\\Users\\theod\\Master_project\\Builds\\0.6\\botLocomotion.exe"
+    "C:\\Users\\theod\\Master_project\\Builds\\0.6.6 (timescale 20, again)\\botLocomotion.exe"
+    # "C:\\Users\\theod\\Master_project\\Builds\\0.6\\botLocomotion.exe"
     # CONFIG_DETAILS["buildPath"] + "\\" +
     # CONFIG_DETAILS["unityEnvironmentVersion"] + "\\" +
     # CONFIG_DETAILS["unityEnvironmentName"] + ".exe"
@@ -44,7 +45,6 @@ CONFIG_DETAILS = CONFIG_DETAILS["DEFAULT"]
 
 class VaryingLearner(Learner):
     def __init__(self):
-        # TODO: Change to config format!!!
         self.CONFIG_DETAILS = CONFIG_DETAILS
 
         config = "C:\\Users\\theod\\Master_project\\Pythonscripts\\Tests\\Determinism\\NEATconfig"
@@ -80,10 +80,10 @@ class VaryingLearner(Learner):
 
 
         simulationSteps = 600
-        nActionsRemembered = 5
-        nActionsIndividual = 12
+        nObsRemembered = 5
+        nObsIndividual = 72
 
-        lastNActions = np.zeros((nActionsRemembered, nActionsIndividual))
+        lastNObs = np.zeros((nObsRemembered, nObsIndividual))
 
         env.reset()
 
@@ -111,21 +111,22 @@ class VaryingLearner(Learner):
                     )
             
             # Calculate mse, subtract from reward
-            reward += ((lastNActions - action)**2).sum()
+            reward += ((lastNObs - np.asarray(observations))**2).sum()
+            reward /= nObsIndividual
 
             # Shift rewards
-            lastNActions[1:] = lastNActions[:-1]
-            lastNActions[0] = action
+            lastNObs[1:] = lastNObs[:-1]
+            lastNObs[0] = observations
             # Calculate reward
             
-            import pdb
-            pdb.set_trace()
 
             env.step()
 
         env.close()
         reward /= (self.CONFIG_DETAILS.getint("simulationSteps"))
-        print(f"Reward given to {genID:<3} as {reward:.20g}")
+        # print(f"Reward given to {genID:<3} as {reward:.20g}")
+        print(f"{reward:.1e}", end=", ")
+
 
         return reward
 
@@ -136,7 +137,7 @@ def fetchGenome():
     Fetches a genome from a population and places 
     it so the test can grab it
     """
-    with open("C:\\Users\\theod\\Master_project\\Populations\\0.6\\popcount360_simlength600_\\generation_0098.pkl", "rb") as a:
+    with open("C:\\Users\\theod\\Master_project\\Populations\\Tests\\Determinism\\generation_0179.pkl", "rb") as a:
         b = pickle.load(a)
     _, gen = b
     outfile = "C:\\Users\\theod\\Master_project\\Pythonscripts\\Tests\\Determinism\\testGenome.pkl"
@@ -203,15 +204,14 @@ def testDeterminism(genome):
 
     random.seed = seed
 
-    actionSets = []
-    for i in range(nTests):
-        actionSets.append([])
+    actionSets = np.empty((nTests, simulationSteps, 12))
+    for test in range(nTests):
         env = UnityEnvironment(
             file_name=CONFIG_DETAILS["exeFilePath"],
             seed=seed,
             side_channels=[],
             no_graphics=True,
-            worker_id=24, # Base uses 0-23, 24 should not impede base runs
+            worker_id=25, # Base uses 1-24, 25 should not impede base runs
         )
 
         env.reset()
@@ -221,15 +221,16 @@ def testDeterminism(genome):
 
         network = neat.nn.FeedForwardNetwork.create(genome,config)
 
-        for t in range(simulationSteps):
+        for step in range(simulationSteps):
             decisionSteps, _ = env.get_steps(behaviorName)
 
             observations = []
             for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                 observations.extend(obs)
-            action = np.array(network.activate(observations)).reshape(1,12)*2-1
+            action = np.array(network.activate(observations)).reshape(1,12)#*2-1
 
-            actionSets[-1].append(action)
+            # actionSets[-1].append(action)
+            actionSets[test,step,:] = action
 
             for i, id in enumerate(decisionSteps.agent_id):
 
@@ -246,13 +247,17 @@ def testDeterminism(genome):
         
 
         
-    for i, j in zip(actionSets[0], actionSets[1]):
-        print(i, j, sum(i-j))
+    # for i, ii in zip(actionSets[0], actionSets[1]):
+    #     # pass
+    #     print([i_i for i_i in i], 
+    #           [ii_i for ii_i in ii], 
+    #           sum(i-ii), sep="\n", end="\n\n")
 
+    print(f"Full difference sum: {(np.abs(actionSets[0] - actionSets[1])).sum()}")
 
 if __name__ == "__main__" :
     # import multiprocessing as mp
     # mp.freeze_support()
 
     varLearner = VaryingLearner()
-    varLearner.run()
+    varLearner.run(useCheckpoint=True)
