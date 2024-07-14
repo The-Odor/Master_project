@@ -274,7 +274,19 @@ class Learner():
                 pop, bestSpecimen = pickle.load(infile)
                 print(f"Loaded generation from {Generation[0]}\n"
                       f"Winner genome has complexity {bestSpecimen.size()}")
-                return pop, bestSpecimen
+                
+                # Overwrites old config details
+                pop = neat.population.Population(
+                    self.NEAT_CONFIG,
+                    (pop.population, pop.species, pop.generation)
+                    )
+            
+                pop.add_reporter(neat.StdOutReporter(False))
+
+                return (pop, bestSpecimen)
+
+
+                # return (pop, bestSpecimen)
         else:
             pop = neat.Population(config)
             pop.add_reporter(neat.StdOutReporter(False))
