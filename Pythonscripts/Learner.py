@@ -62,19 +62,27 @@ class Learner():
         reward = 0
         for t in range(simulationSteps):
             decisionSteps, _ = env.get_steps(behaviorName)
-            observations = []
-            for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-                observations.extend(obs)
-            action = np.array(network.activate(observations)).reshape(1,12)*2-1
-            # Action is sigmoid with range moved from [0,1] to [-1,1]
+            # observations = []
+            # for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+            #     observations.extend(obs)
+            # action = np.array(network.activate(observations)).reshape(1,12)
+            # # Action is sigmoid with range moved from [0,1] to [-1,1]
             
-            for i, id in enumerate(decisionSteps.agent_id):
+            # for i, id in enumerate(decisionSteps.agent_id):
 
-                env.set_action_for_agent(
-                    behaviorName, id, 
-                    ActionTuple(np.array(action[0][i*2:(i+1)*2]).reshape(1,2))
-                    )
+            #     env.set_action_for_agent(
+            #         behaviorName, id, 
+            #         ActionTuple(np.array(action[0][i*2:(i+1)*2]).reshape(1,2))
+            #         )
             
+            for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                action = np.array(network.activate(obs)).reshape(1,2)
+                env.set_action_for_agent(
+                    behaviorName, id,
+                    ActionTuple(np.array(action))
+                )
+
+
             reward +=sum(decisionSteps.reward) / len(decisionSteps.reward)
             if reward <= -1000: # Large negative numbers means disqualification
                 reward -= 1000 * (simulationSteps - t)
@@ -325,28 +333,15 @@ class Learner():
                 )
         else:
             raise Exception("Executeable not found")
-        # print("Environment found")
+
+        reward = self.simulateGenome(genome,config,env)
+
+        if reward > 0:
+            print(f"Reward finalized as: {reward}")
+        else:
+            print(f"DISC")
 
 
-
-        # fileName = f"{self.CONFIG_DETAILS['unityProjectFilepath']}\\"\
-        #             f"{self.CONFIG_DETAILS['unityEnvironmentName']}"\
-        #             f"{self.CONFIG_DETAILS['unityEnvironmentVersion']}.exe"
-        # env = UnityEnvironment(
-        #     file_name = fileName,
-        #     worker_id = 0,
-        #     base_port = None,
-        #     seed = self.CONFIG_DETAILS.getint("unitySeed"),
-        #     no_graphics = False,
-        #     no_graphics_monitor = False,
-        #     timeout_wait = self.CONFIG_DETAILS.getint("simulationTimeout"),
-        #     additional_args = None,
-        #     side_channels = None,
-        #     log_folder = None,
-        #     num_areas =  1
-        # )
-
-        self.simulateGenome(genome,config,env)
 
     def assertBehaviorNames(self, env):
         assert len(list(env.behavior_specs.keys())) == 1,\
