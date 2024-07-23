@@ -86,3 +86,4 @@ crashlytics-build.properties
 *.pkl
 *.pyc
 /Pythonscripts/temp
+/Populations
