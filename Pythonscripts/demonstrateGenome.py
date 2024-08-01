@@ -5,7 +5,7 @@ if __name__ == "__main__":
     learner = Learner(CONFIG_DETAILS)
     # learner.demonstrateGenome(learner.findGeneration()[1])
 
-    case = 1
+    case = 2
 
     if case == 1:
         # case 2:

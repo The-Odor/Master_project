@@ -20,8 +20,8 @@ public class MultimorphAgent : Agent {
     double TAU;
     
     // Network output factors
-    float angleChangeFactor = 1e0f;
-    float velocityChangeFactor = 1e1f;
+    float angleChangeFactor = 1e2f;
+    float velocityChangeFactor = 1e3f;
     float angleScalingFactor = 1.8e2f;
     float velocityScalingFactor = 4e2f;
     

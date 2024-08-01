@@ -53,46 +53,52 @@ class Learner():
 
 
         env.reset()
+        network = neat.nn.RecurrentNetwork.create(gen, config)
 
         self.assertBehaviorNames(env)
         behaviorNames = list(env.behavior_specs.keys())
-        behaviorName = behaviorNames[0]
+        # behaviorName = behaviorNames[0]
+        reward = {behavior:0 for behavior in behaviorNames}
 
-        network = neat.nn.RecurrentNetwork.create(gen, config)
-        reward = 0
         for t in range(simulationSteps):
-            decisionSteps, _ = env.get_steps(behaviorName)
-            # observations = []
-            # for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-            #     observations.extend(obs)
-            # action = np.array(network.activate(observations)).reshape(1,12)
-            # # Action is sigmoid with range moved from [0,1] to [-1,1]
-            
-            # for i, id in enumerate(decisionSteps.agent_id):
+            for behaviorName in behaviorNames:
+                decisionSteps, _ = env.get_steps(behaviorName)
+                # observations = []
+                # for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                #     observations.extend(obs)
+                # action = np.array(network.activate(observations)).reshape(1,12)
+                # # Action is sigmoid with range moved from [0,1] to [-1,1]
+                
+                # for i, id in enumerate(decisionSteps.agent_id):
 
-            #     env.set_action_for_agent(
-            #         behaviorName, id, 
-            #         ActionTuple(np.array(action[0][i*2:(i+1)*2]).reshape(1,2))
-            #         )
-            
-            for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-                action = np.array(network.activate(obs)).reshape(1,2)
-                env.set_action_for_agent(
-                    behaviorName, id,
-                    ActionTuple(np.array(action))
-                )
+                #     env.set_action_for_agent(
+                #         behaviorName, id, 
+                #         ActionTuple(np.array(action[0][i*2:(i+1)*2]).reshape(1,2))
+                #         )
+                
+                for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                    action = np.array(network.activate(obs)).reshape(1,2)
+                    env.set_action_for_agent(
+                        behaviorName, id,
+                        ActionTuple(np.array(action))
+                    )
 
 
-            reward +=sum(decisionSteps.reward) / len(decisionSteps.reward)
-            if reward <= -1000: # Large negative numbers means disqualification
-                reward -= 1000 * (simulationSteps - t)
-                break
-
-            # print(action)
+                reward[behaviorName] +=sum(decisionSteps.reward) / len(decisionSteps.reward)
+                if reward[behaviorName] <= -1000: # Large negative numbers means disqualification
+                    reward[behaviorName] -= 1000 * (simulationSteps - t)
+                    break
 
             env.step()
         env.close()
-        reward /= (self.CONFIG_DETAILS.getint("simulationSteps"))
+
+
+        for key in reward:
+            reward[key] /= (self.CONFIG_DETAILS.getint("simulationSteps"))
+
+
+
+
         # if reward > 0:
         #     print(f"Reward given to {genID:<3} as {reward:.2g}; last instance was "
         #         f"({', '.join(str(round(i,2)) for i in decisionSteps.reward)})")
@@ -100,8 +106,12 @@ class Learner():
         #     print(f"Reward given to {genID:<3} as {reward:.2g}; "
         #           "last instance was DISQUALIFIED")
 
-        return reward
+        return self.rewardAggregation(reward)
         
+    def rewardAggregation(self, rewards):
+        # Simple summation for the moment
+        return sum([reward for _, reward in rewards.items()])
+
     def fitnessFunc(self,genome,config,queue):
         # return self.fitnessFuncTest(genome,config)
 
@@ -221,12 +231,16 @@ class Learner():
             #             f"\popcount{self.CONFIG_DETAILS['populationCount']}_"\
             #             f"simlength{self.CONFIG_DETAILS['simulationSteps']}"
 
-            pop, _ = self.findGeneration()
+            pop = self.findGeneration()
 
 
         if not pop:
             pop = neat.Population(config)
             pop.add_reporter(neat.StdOutReporter(False))
+            pop.add_reporter(neat.checkpoint.Checkpointer(
+                generation_interval=1,
+                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+"\\generation_",
+                ))
         
         if numGen == pop.generation:
             raise Exception("Training started, but generation limit already "
@@ -243,9 +257,9 @@ class Learner():
 
             outfileName = outfilePath +\
                           f"\generation_{str(pop.generation).zfill(4)}.pkl"
-            with open(outfileName, "wb") as outfile:
-                pickle.dump((pop, bestBoi), outfile)
-                print(f"Saved generation to {outfileName}")
+            # with open(outfileName, "wb") as outfile:
+            #     pickle.dump((pop, bestBoi), outfile)
+            #     print(f"Saved generation to {outfileName}")
 
 
 
@@ -272,36 +286,46 @@ class Learner():
         Generation = (None, 0)
 
         for generationFile in trueFileList:
-            genNumber = int(generationFile[-8:-4]) # generation_[xxxx].pkl
+            # genNumber = int(generationFile[-8:-4]) # generation_[xxxx].pkl
+            genNumberIndent = generationFile.rfind("generation_")+11
+            genNumber = int(generationFile[genNumberIndent:])
             if (genNumber > Generation[1] and specificGeneration is None)\
             or (genNumber == specificGeneration):
                 Generation = (generationFile, genNumber)
                         
         if Generation[0]:
-            with open(Generation[0], "rb") as infile: 
-                pop, bestSpecimen = pickle.load(infile)
-                print(f"Loaded generation from {Generation[0]}\n"
-                      f"Winner genome has complexity {bestSpecimen.size()}")
+            # with open(Generation[0], "rb") as infile: 
+            #     pop = pickle.load(infile)
+            #     print(f"Loaded generation from {Generation[0]}\n")
+            pop =  neat.checkpoint.Checkpointer.restore_checkpoint(Generation[0])
                 
-                # Overwrites old config details
-                pop = neat.population.Population(
-                    self.NEAT_CONFIG,
-                    (pop.population, pop.species, pop.generation)
-                    )
-            
-                pop.add_reporter(neat.StdOutReporter(False))
-
-                return (pop, bestSpecimen)
+            # Overwrites old config details
+            pop = neat.population.Population(
+                self.NEAT_CONFIG,
+                (pop.population, pop.species, pop.generation)
+                )
+        
+            pop.add_reporter(neat.StdOutReporter(False))
+            pop.add_reporter(neat.checkpoint.Checkpointer(
+                generation_interval=1,
+                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+"\\generation_",
+                ))
+            return pop
 
 
                 # return (pop, bestSpecimen)
         else:
             pop = neat.Population(config)
             pop.add_reporter(neat.StdOutReporter(False))
+            pop.add_reporter(neat.checkpoint.Checkpointer(
+                generation_interval=1,
+                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+"\\generation_",
+                ))
 
-            return (pop, None)
+            return pop
 
     def demonstrateGenome(self,genome=None,config=None):
+        raise NotImplemented("top genome no longer saved\n I am sad")
         if config is None:
             config = self.NEAT_CONFIG
 
@@ -344,8 +368,8 @@ class Learner():
 
 
     def assertBehaviorNames(self, env):
-        assert len(list(env.behavior_specs.keys())) == 1,\
-         (f"There is not exactly 1 behaviour in the "
+        assert len(list(env.behavior_specs.keys())) != 0,\
+         (f"There are no behaviours in the "
           f"Unity environment: {list(env.behavior_specs.keys())}")
 
     def motionTest(self):
@@ -358,30 +382,32 @@ class Learner():
 
         self.assertBehaviorNames(env)
         behaviorNames = list(env.behavior_specs.keys())
-        behaviorName = behaviorNames[0]
+        # behaviorName = behaviorNames[0]
 
         motionDuration = 15
 
         while True:
-            decisionSteps, other = env.get_steps(behaviorName)
-            T = time.time()
-            if T == motionDuration/2:
-                # Prevents division by 0
-                action = (1,1)
-            else:
-                action = 2*(T % motionDuration) / motionDuration - 1
-                action = action/abs(action)
-                action = (action, action)
-            for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-                env.set_action_for_agent(
-                    behaviorName, 
-                    id, 
-                    ActionTuple(np.array(action).reshape(1,2))
-                )
-                print(f"Sent action {action}")
+            for behaviorName in behaviorNames:
+                decisionSteps, other = env.get_steps(behaviorName)
+                T = time.time()
+                if T == motionDuration/2:
+                    # Prevents division by 0
+                    action = (1,1)
+                else:
+                    action = 2*(T % motionDuration) / motionDuration - 1
+                    action = action/abs(action)
+                    action = (action, action)
+                for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                    env.set_action_for_agent(
+                        behaviorName, 
+                        id, 
+                        ActionTuple(np.array(action).reshape(1,2))
+                    )
+                    print(f"Sent action {action}")
             env.step()
 
     def makePDF(self, genome=None,config=None):
+        raise NotImplemented("top genome no longer saved\n I am sad")
         if genome is None:
             _, genome = self.findGeneration()
         if config is None:

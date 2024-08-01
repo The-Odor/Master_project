@@ -21,6 +21,26 @@ public class Applier : MonoBehaviour {
 
 
     void OnEnable() {
+
+        // Edits behaviour names dependent on morphology
+        List<Transform> v1_roots = new List<Transform>();
+        foreach (Transform trans in this.transform.GetComponentsInChildren<Transform>()) {
+            if (trans.name.EndsWith("_v1")) {
+                v1_roots.Add(trans);
+            }
+        }
+        foreach (Transform v1 in v1_roots) {
+            foreach (Transform child in v1.GetComponentsInChildren<Transform>()) {
+                // Debug.Log(child);
+                if (child.GetComponent<BehaviorParameters>() != null) {
+                    child.GetComponent<BehaviorParameters>().BehaviorName = v1.name;
+                }
+            }
+        }
+
+
+
+
         foreach (Transform child in this.transform.GetComponentsInChildren<Transform>()) {
             // if (child.gameObject.name == "Box" && child.GetComponent<BoxCollider>() != null) {
             //     child.GetComponent<BoxCollider>().material = physicMaterial;
@@ -75,6 +95,8 @@ public class Applier : MonoBehaviour {
                 // child.GetComponent<ArticulationBody>().JointFriction = 0.05;
                 // child.GetComponent<ArticulationBody>().AngularDamping = 0.05;
             }
+            // Edits layer for collision properties
+            child.gameObject.layer = LayerMask.NameToLayer("RobitElement");
         }
     }
 }
