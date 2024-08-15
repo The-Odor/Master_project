@@ -255,11 +255,15 @@ class Learner():
                 self.CONFIG_DETAILS.getint("generationsBeforeSave")
             )
 
-            outfileName = outfilePath +\
-                          f"\generation_{str(pop.generation).zfill(4)}.pkl"
+            # outfileName = outfilePath +\
+            #               f"\generation_{str(pop.generation).zfill(4)}.pkl"
             # with open(outfileName, "wb") as outfile:
             #     pickle.dump((pop, bestBoi), outfile)
             #     print(f"Saved generation to {outfileName}")
+
+            outfileName = outfilePath + "\\bestSpecimen"
+            with open(outfileName, "wb") as outfile:
+                pickle.dump(bestBoi, outfile)
 
 
 
@@ -280,7 +284,7 @@ class Learner():
         trueFileList = []
         for generationFile in fullFileList:
             generationFolderFile = os.path.join(populationFolder, generationFile)
-            if os.path.isfile(generationFolderFile):
+            if os.path.isfile(generationFolderFile) and generationFile != "bestSpecimen":
                 trueFileList.append(generationFolderFile)
 
         Generation = (None, 0)
@@ -325,25 +329,28 @@ class Learner():
             return pop
 
     def demonstrateGenome(self,genome=None,config=None):
-        raise NotImplemented("top genome no longer saved\n I am sad")
+        # raise NotImplemented("top genome no longer saved\n I am sad")
         if config is None:
             config = self.NEAT_CONFIG
+        if genome is None:
+            # _, genome = self.findGeneration()
+            genome = self.CONFIG_DETAILS["populationFolder"] + "\\bestSpecimen"
 
         if isinstance(genome, str):
             # Given as filepath
             with open(genome, "rb") as infile:
-                population = pickle.load(infile)
-            if isinstance(population, tuple):
-                population, genome = population
-            elif isinstance(population, neat.population.Population):
+                loadedFile = pickle.load(infile)
+            if isinstance(loadedFile, tuple):
+                _, genome = loadedFile
+            elif isinstance(loadedFile, neat.genome.DefaultGenome):
+                genome = loadedFile
+            elif isinstance(loadedFile, neat.population.Population):
                 raise NotImplemented
+            else:
+                raise TypeError(f"File not readable: {genome}")
         elif isinstance(genome, neat.genome.DefaultGenome):
             # Given directly
             pass
-        elif genome is None:
-            _, genome = self.findGeneration()
-        elif isinstance(genome, int):
-            _, genome = self.findGeneration(specificGeneration=genome)
         else:
             raise TypeError("Genome not of demonstrable datatype")
 
@@ -407,9 +414,12 @@ class Learner():
             env.step()
 
     def makePDF(self, genome=None,config=None):
-        raise NotImplemented("top genome no longer saved\n I am sad")
+        # raise NotImplemented("top genome no longer saved\n I am sad")
         if genome is None:
-            _, genome = self.findGeneration()
+            # _, genome = self.findGeneration()
+            genome = self.CONFIG_DETAILS["populationFolder"] + "\\bestSpecimen"
+            with open(genome, "rb") as infile:
+                genome = pickle.load(infile)
         if config is None:
             config = self.NEAT_CONFIG
         draw_net(config, genome, True)
