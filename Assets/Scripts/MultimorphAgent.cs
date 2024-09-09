@@ -26,9 +26,9 @@ public class MultimorphAgent : Agent {
     float velocityScalingFactor = 4e2f;
     
     // Robot structural factors
-    float stiffnessFactor = 1;
+    float stiffnessFactor = 60;
     float dampingFactor = 1;
-    float forceLimitFactor = 3.402823e3f;
+    float forceLimitFactor = 3.402823e30f;
     float angleUpperLimit = 60;
     float angleLowerLimit = -60;
 
@@ -108,7 +108,7 @@ public class MultimorphAgent : Agent {
     /// Reset the agent when an episode begins
     /// </summary>
     public override void OnEpisodeBegin() {
-        Debug.Log("New episode beginning");
+        // Debug.Log("New episode beginning");
         // Reset location for bot
         // startPosition = transform.position;
         // transform.position = startPosition;
@@ -144,7 +144,7 @@ public class MultimorphAgent : Agent {
         // startPosition = transform.position;
         
 
-        Debug.Log("New episode begun");
+        // Debug.Log("New episode begun");
     }
 
     // public void FixedUpdate() {
@@ -245,14 +245,22 @@ public class MultimorphAgent : Agent {
               + Math.Pow(transform.position[2] - startPosition[2], 2)
                 );
         }
-        Debug.Log("Reward added: " + reward + statement);
+        // Debug.Log("Reward added: " + reward + statement);
         if (!float.IsNaN(reward)) {AddReward(reward);}
         else {Debug.Log("Reward somehow became a NaN??");}
 
         // UI Update section
-        if (this.transform.name == "gecko_v1_root_link0") {
+        if (this.transform.name.EndsWith("v1_root_link0")) {
             TMPro.TextMeshProUGUI mText = UIText.GetComponent<TMPro.TextMeshProUGUI>();
-            mText.text = transform.position.ToString();
+            Vector3 pos = transform.position;
+            float dist = (float)Math.Sqrt(Math.Pow(pos.x,2) + Math.Pow(pos.y,2));
+            string name = this.transform.name;
+            name = name.Substring(0, name.IndexOf("v1_root_link0"));
+            if (this.transform.name == "gecko_v1_root_link0") {
+                mText.text = ""+name + dist;
+            } else {
+                mText.text = mText.text + "\n" + name + dist;
+            }
         }
     }
 
@@ -262,19 +270,19 @@ public class MultimorphAgent : Agent {
     /// <param name="">The actions to take</param>
     public override void OnActionReceived(ActionBuffers actions) {
         // 2 total outputs
-        if ((DateTime.Now - timeEpisodeStart).TotalSeconds < 1) {
-            var drive = articulationBody.xDrive;
-            drive.stiffness = stiffnessFactor;
-            drive.damping = dampingFactor;
-            drive.forceLimit = forceLimitFactor;
-            drive.targetVelocity = -drive.target;
-            drive.target = 0;
-            articulationBody.xDrive = drive;
-        } else {
+        // if ((DateTime.Now - timeEpisodeStart).TotalSeconds < 1 && false) {
+        //     var drive = articulationBody.xDrive;
+        //     drive.stiffness = stiffnessFactor;
+        //     drive.damping = dampingFactor;
+        //     drive.forceLimit = forceLimitFactor;
+        //     drive.targetVelocity = -drive.target;
+        //     drive.target = 0;
+        //     articulationBody.xDrive = drive;
+        // } else {
             if (!(float.IsNaN(actions.ContinuousActions[0])) && (!float.IsNaN(actions.ContinuousActions[1]))){
                 RotateAction(actions.ContinuousActions[0], actions.ContinuousActions[1]);
             } else {Debug.Log("Mooooom, the network output a NaaaaN!!");}
-        }
+        // }
     }
 
     // Trying to copy from the ArmController, using some of their helpers
@@ -282,30 +290,30 @@ public class MultimorphAgent : Agent {
         // A bigger motion is made faster
         // Scaled linearly by angleScalingFactor and the difference
         // between current angle and target angle
-        float newTargetAngle = newTargetAngleNormalized * angleScalingFactor;
-        float newTargetVelocity = newTargetVelocityNormalized * velocityScalingFactor;
-        currentTargetAngle = Mathf.MoveTowards(
-            currentTargetAngle, 
-            newTargetAngle, 
-            Math.Abs(newTargetAngle - currentTargetAngle)*angleChangeFactor//*Time.fixedDeltaTime
-        );
-        currentTargetVelocity = Mathf.MoveTowards(
-            currentTargetVelocity, 
-            newTargetVelocity, 
-            Math.Abs(newTargetVelocity - currentTargetVelocity)*velocityChangeFactor//*Time.fixedDeltaTime
-        );
-                
+        // float newTargetAngle = newTargetAngleNormalized * angleScalingFactor;
+        // float newTargetVelocity = newTargetVelocityNormalized * velocityScalingFactor;
+        // currentTargetAngle = Mathf.MoveTowards(
+        //     currentTargetAngle, 
+        //     newTargetAngle, 
+        //     Math.Abs(newTargetAngle - currentTargetAngle)*angleChangeFactor//*Time.fixedDeltaTime
+        // );
+        // currentTargetVelocity = Mathf.MoveTowards(
+        //     currentTargetVelocity, 
+        //     newTargetVelocity, 
+        //     Math.Abs(newTargetVelocity - currentTargetVelocity)*velocityChangeFactor//*Time.fixedDeltaTime
+        // );
+
         // Until we think we need the actual smoothing, we're going to just make it work like this
-        // currentTargetAngle = newTargetAngleNormalized * angleChangeFactor;
-        // currentTargetVelocity = newTargetVelocityNormalized * velocityChangeFactor;
-        
+        currentTargetAngle = newTargetAngleNormalized * angleChangeFactor;
+        currentTargetVelocity = newTargetVelocityNormalized * velocityChangeFactor;
+
         var drive = articulationBody.xDrive;
         drive.stiffness = stiffnessFactor;
         drive.damping = dampingFactor;
         drive.forceLimit = forceLimitFactor;
 
         drive.target = currentTargetAngle;// + articulationBody.jointPosition[0];
-        drive.targetVelocity = currentTargetVelocity;
+        // drive.targetVelocity = currentTargetVelocity;
         // drive.targetVelocity = 0;
         
         articulationBody.xDrive = drive;

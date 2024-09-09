@@ -8,7 +8,7 @@
 # Individually trained networks as a baseline for comparison
 
 [NEAT]
-pop_size = 360
+pop_size = 720
 no_fitness_termination = True
 fitness_criterion = max
 fitness_threshold = 0
@@ -40,15 +40,15 @@ bias_max_value = 30
 bias_min_value =-30
 
 # Compatibility options
+compatibility_weight_coefficient = 0.5
 # compatibility_disjoint_coefficient = BOTH disjoint AND excess
 # compatibility_disjoint_coefficient = 1.0 
 # Scaled for increase in network size
 compatibility_disjoint_coefficient = 0.02 
-compatibility_weight_coefficient = 0.5
 
 # Connection options
-conn_add_prob = 0.8
-conn_delete_prob = 0.8
+conn_add_prob = 0.9
+conn_delete_prob = 0.08
 
 # Node options
 node_add_prob = 0.5
@@ -68,8 +68,8 @@ initial_connection = unconnected
 # Weight options
 weight_init_mean = 0
 weight_init_stdev = 1
-weight_replace_rate = 1
-weight_mutate_rate = 8
+weight_replace_rate = 0.1
+weight_mutate_rate = 0.8
 weight_mutate_power = 5
 weight_max_value = 30000
 weight_min_value =-30000
@@ -89,7 +89,7 @@ compatibility_threshold = 1.0
 
 [DefaultStagnation]
 species_fitness_func = max
-species_elitism = 3
+species_elitism = 0
 
 [DefaultReproduction]
 elitism = 0

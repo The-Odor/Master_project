@@ -1,11 +1,12 @@
-from MLAgentLearn import Learner, CONFIG_DETAILS
+from MLAgentLearn import Learner, Learner_CMA, CONFIG_DETAILS
 
 
 if __name__ == "__main__":
     learner = Learner(CONFIG_DETAILS)
+    learnerCMA = Learner_CMA(CONFIG_DETAILS)
     # learner.demonstrateGenome(learner.findGeneration()[1])
 
-    case = 2
+    case = 3
 
     if case == 1:
         # case 2:
@@ -13,10 +14,16 @@ if __name__ == "__main__":
         learner.makePDF(genome=None)
         
         # Demonstrates Genomes (hence name, lol)
-        learner.demonstrateGenome(learner.findGeneration()[1])
+        learner.demonstrateGenome()
+        # learner.demonstrateGenome(learner.findGeneration()[1])
         # learner.demonstrateGenome(learner.findGeneration(specificGeneration=69)[1])
 
     elif case == 2:
         # case 3:
         # Demonstrates simple motion in Unity editor
         learner.motionTest()
+
+    elif case == 3:
+        # case 4:
+        # Demonstrates cma solution
+        learnerCMA.demonstrateGenome()

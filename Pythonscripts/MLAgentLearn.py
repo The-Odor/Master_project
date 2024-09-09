@@ -1,4 +1,4 @@
-from Learner import Learner
+from Learner import Learner, Learner_CMA
 import configparser as cfp
 import random
 import multiprocessing as mp
@@ -34,8 +34,19 @@ CONFIG_DETAILS["populationFolder"] = (
 if __name__ == "__main__":
     mp.freeze_support()
 
-    learner = Learner(CONFIG_DETAILS)
-    finalGeneration, bestBoi = learner.run(useCheckpoint=True)    
+    # learner = Learner(CONFIG_DETAILS)
+    # finalGeneration, bestBoi = learner.run(useCheckpoint=True)    
+
+    learner = Learner_CMA(CONFIG_DETAILS)
+    learner.train()
+
+
+
+
+
+
+
+
 
     # import winsound
     # duration = 1000  # milliseconds

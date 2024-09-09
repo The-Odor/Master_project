@@ -16,6 +16,7 @@ import time
 import datetime
 import os
 from visualize import draw_net
+import cma
 
 class Learner():
     def __init__(self, config_details):
@@ -423,6 +424,162 @@ class Learner():
         if config is None:
             config = self.NEAT_CONFIG
         draw_net(config, genome, True)
+
+
+
+
+
+
+class Learner_CMA(Learner):
+    def train(self):
+        # Trick: Open up an instance of Unity, extract the names,
+        #        then close it again, for automatic dimensionality!
+        env = UnityEnvironment(
+            file_name=self.CONFIG_DETAILS["exeFilepath"],
+            no_graphics=True,
+            worker_id=2
+        )
+        env.reset()
+        self.assertBehaviorNames(env)
+        behaviorNames = list(env.behavior_specs.keys())
+        nagents = 0
+        for behavior in behaviorNames:
+            decisionSteps, _ = env.get_steps(behavior)
+            njoints = len(decisionSteps.agent_id)
+            nagents += njoints
+        env.close()
+
+        # Starting parameters for search set as:
+        # Constant  = 0
+        # Amplitude = 8
+        # Frequency = 10
+        # Phase     = 0
+
+        es = cma.CMAEvolutionStrategy([0,8,10,0]*nagents, 0.5)
+        iteration = 0
+        while True:
+            es.optimize(self.simulateGenome, iterations=10)
+            iteration+= 10
+            # pdb.set_trace()
+            outfileName = self.CONFIG_DETAILS["resultsFolder"]
+            outfileName+= f"\\CMA\\iteration_{iteration}"
+            with open(outfileName, "wb") as outfile:
+                pickle.dump((es, iteration), outfile)
+        print(es.result)
+
+    def demonstrateGenome(self):
+        # argsThatWiggleUnnaturally = [
+        #         -0.07355574, -1.70311053,  2.26106487,  6.2765652 , 
+        #         -3.35534422, -0.10351327,  0.21064545, -3.54712654, 
+        #         -5.2254731 ,  3.74792834, -4.02749407, -1.14582858]
+        # for ind in [0, 4, 8]:
+        #     # Constant
+        #     argsThatWiggleUnnaturally[ind]*= 0
+        # for ind in [1, 5, 9]:
+        #     # Amplitude
+        #     argsThatWiggleUnnaturally[ind]*= 8
+        # for ind in [2, 6, 10]:
+        #     # Frequency
+        #     argsThatWiggleUnnaturally[ind]*= 5
+        # for ind in [3, 7, 11]:
+        #     # Phase
+        #     argsThatWiggleUnnaturally[ind]+= 0
+
+        cmaArgs = self.findGeneration().result[0]
+        self.simulateGenome(cmaArgs, useEditor=True)
+
+
+    def simulateGenome(self, cmaArgs, useEditor=False):
+        # Needs a new simulateGenome because old one was dependent on genome
+        simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
+
+
+        if not useEditor:
+            env = UnityEnvironment(
+                file_name=self.CONFIG_DETAILS["exeFilepath"],
+                seed=self.CONFIG_DETAILS.getint("unitySeed"), 
+                side_channels=[], 
+                no_graphics=True,
+                worker_id=1,
+                timeout_wait=self.CONFIG_DETAILS.getint("simulationTimeout"),
+            )
+        else:
+            print("Please start environment")
+            env = UnityEnvironment()
+            print("Environment Found")
+
+
+        env.reset()
+
+        self.assertBehaviorNames(env)
+        behaviorNames = list(env.behavior_specs.keys())
+        # print(behaviorNames)
+        # simulationSteps=0
+        reward = {behavior:0 for behavior in behaviorNames}
+        allJoints = [behavior + str(agentID) 
+                     for behavior in behaviorNames 
+                     for agentID in env.get_steps(behavior)[0].agent_id]
+        network = {
+            # Creates individual functions as A + B*sin(C*x + D)
+            # for each joint
+            behavior: lambda step: # (position argument, amplitude value)
+            (cmaArgs[4*i+0] + (cmaArgs[4*i+1]
+            *np.sin(cmaArgs[4*i+2]*step + cmaArgs[4*i+3])))
+            for i, behavior in enumerate(allJoints)
+        }
+
+
+        for step in range(simulationSteps):
+            timeVal = step/20 # number of seconds that have passed
+            for behavior in behaviorNames:
+                decisionSteps, _ = env.get_steps(behavior)
+
+                for id in decisionSteps.agent_id:
+                    jointstr = behavior+str(id)
+                    action = network[jointstr](timeVal)
+                    action = ActionTuple(
+                        np.array((action, action)).reshape(1,2)
+                        )
+                    env.set_action_for_agent(behavior, id, action)
+
+                reward[behavior] +=sum(decisionSteps.reward) / len(decisionSteps.reward)
+                if reward[behavior] <= -1000: # Large negative numbers means disqualification
+                    reward[behavior] -= 1000 * (simulationSteps - step)
+                    break
+
+            env.step()
+        env.close()
+
+
+        for key in reward:
+            reward[key] /= (self.CONFIG_DETAILS.getint("simulationSteps"))
+
+        # Optimization is a minimization, and negating reward was simpler 
+        # than digging through documentation for a maximization option
+        return -self.rewardAggregation(reward)
+    
+    def findGeneration(self):
+        generationFolder = f"{self.CONFIG_DETAILS['resultsFolder']}\\CMA"
+        fullFileList = os.listdir(generationFolder)
+        trueFileList = []
+        for generationFile in fullFileList:
+            generationFolderFile = os.path.join(generationFolder, generationFile)
+            if os.path.isfile(generationFolderFile) and generationFile != "bestSpecimen":
+                trueFileList.append(generationFolderFile)
+
+        lastGeneration = 0
+        for generationFile in trueFileList:
+            genNumberIndent = generationFile.rfind("_")+1
+            genNumber = int(generationFile[genNumberIndent:])
+            if (genNumber > lastGeneration):
+                lastGeneration = genNumber
+
+        with open(f"{generationFolder}\\iteration_{lastGeneration}", "rb") as infile:
+            iteration = pickle.load(infile)
+
+        return iteration[0]
+        
+
 
 
 if __name__ == "__main__":
