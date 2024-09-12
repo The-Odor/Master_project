@@ -20,13 +20,13 @@ public class MultimorphAgent : Agent {
     double TAU;
     
     // Network output factors
-    float angleChangeFactor = 1e2f;
+    float angleChangeFactor = 1e1f;
     float velocityChangeFactor = 1e3f;
     float angleScalingFactor = 1.8e2f;
     float velocityScalingFactor = 4e2f;
     
     // Robot structural factors
-    float stiffnessFactor = 60;
+    float stiffnessFactor = 80;
     float dampingFactor = 1;
     float forceLimitFactor = 3.402823e30f;
     float angleUpperLimit = 60;
@@ -291,12 +291,12 @@ public class MultimorphAgent : Agent {
         // Scaled linearly by angleScalingFactor and the difference
         // between current angle and target angle
         // float newTargetAngle = newTargetAngleNormalized * angleScalingFactor;
-        // float newTargetVelocity = newTargetVelocityNormalized * velocityScalingFactor;
         // currentTargetAngle = Mathf.MoveTowards(
         //     currentTargetAngle, 
         //     newTargetAngle, 
         //     Math.Abs(newTargetAngle - currentTargetAngle)*angleChangeFactor//*Time.fixedDeltaTime
         // );
+        // float newTargetVelocity = newTargetVelocityNormalized * velocityScalingFactor;
         // currentTargetVelocity = Mathf.MoveTowards(
         //     currentTargetVelocity, 
         //     newTargetVelocity, 

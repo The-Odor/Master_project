@@ -94,6 +94,10 @@ public class Applier : MonoBehaviour {
                 // child.GetComponent<ArticulationBody>().LinearDamping = 0.05;
                 // child.GetComponent<ArticulationBody>().JointFriction = 0.05;
                 // child.GetComponent<ArticulationBody>().AngularDamping = 0.05;
+                // Edits DecisionRequester parameters
+                if (child.GetComponent<DecisionRequester>()!=null) {
+                    child.GetComponent<DecisionRequester>().DecisionPeriod = 1;
+                } 
             }
             // Edits layer for collision properties
             child.gameObject.layer = LayerMask.NameToLayer("RobitElement");

@@ -19,6 +19,12 @@ public class CameraFollow : MonoBehaviour
         // function here to look for a common script in your 
         // robots instead of putting it in manually
 
+        int i = 0;
+        foreach (GameObject go in GameObject.FindGameObjectsWithTag("robot")) {
+            Debug.Log(i);
+            objectsToFollow[i++] = go.transform;
+        }
+
         // Check if there are objects to follow
         if (objectsToFollow.Length == 0)
         {
@@ -34,16 +40,20 @@ public class CameraFollow : MonoBehaviour
             // Update the target object based on key presses
             if (Input.GetKeyDown(KeyCode.Q))
             {
+                objectIndex--;
+
                 // Handle underflow case
-                if(objectIndex == 0)
+                if(objectIndex == -1)
                     objectIndex = objectsToFollow.Length - 1;
 
                 target = objectsToFollow[objectIndex];
             }
             if (Input.GetKeyDown(KeyCode.E))
             {
+                objectIndex++;
+
                 // Handle overflow case
-                if(objectIndex == objectsToFollow.Length - 1)
+                if(objectIndex == objectsToFollow.Length)
                     objectIndex = 0;
 
                 target = objectsToFollow[objectIndex];

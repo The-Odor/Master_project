@@ -57,7 +57,7 @@ class Learner():
         network = neat.nn.RecurrentNetwork.create(gen, config)
 
         self.assertBehaviorNames(env)
-        behaviorNames = list(env.behavior_specs.keys())
+        behaviorNames = sorted(list(env.behavior_specs.keys()))
         # behaviorName = behaviorNames[0]
         reward = {behavior:0 for behavior in behaviorNames}
 
@@ -110,7 +110,11 @@ class Learner():
         return self.rewardAggregation(reward)
         
     def rewardAggregation(self, rewards):
-        # Simple summation for the moment
+        # Reward for a single behavior is equivalent to final distance
+        for behavior in rewards:
+            rewards[behavior] = rewards[behavior][-1]
+
+        # Different behaviors undergo simple summation
         return sum([reward for _, reward in rewards.items()])
 
     def fitnessFunc(self,genome,config,queue):
@@ -389,7 +393,7 @@ class Learner():
         env.reset()
 
         self.assertBehaviorNames(env)
-        behaviorNames = list(env.behavior_specs.keys())
+        behaviorNames = sorted(list(env.behavior_specs.keys()))
         # behaviorName = behaviorNames[0]
 
         motionDuration = 15
@@ -431,32 +435,68 @@ class Learner():
 
 
 class Learner_CMA(Learner):
-    def train(self):
+    def __init__(self,config_details):
+        Learner.__init__(self,config_details)
+        # Magical numbers to map CMAArgs from optimal CMA-range (0-10)*
+        # onto optimal joint range (parameter-dependent, see comments)
+        # *https://cma-es.github.io/cmaes_sourcecode_page.html#practical
+        # a (shift): (a0-5)*(60/5) = 12*(a0-5)
+        # b (amplt): (b0-5)*(60/5) = 12*(b0-5)
+        # c (freqc): c0
+        # e (phase): e0*(tau/10)
+        self.a = lambda x: 24*(x-5) # So it may lock angle to min angle -60 and max angle +60 
+        self.b = lambda x: 12*x # scale to max angle +-60. Further expanded due all values moving towards 10
+        self.c = lambda x: 2*x # Previously trained models landed frequency 10
+        self.d = lambda x: x*(2*np.pi/10) # tau is a full phase
+
+    def getBehaviors(self):
         # Trick: Open up an instance of Unity, extract the names,
         #        then close it again, for automatic dimensionality!
         env = UnityEnvironment(
             file_name=self.CONFIG_DETAILS["exeFilepath"],
             no_graphics=True,
-            worker_id=2
+            worker_id=30
         )
         env.reset()
         self.assertBehaviorNames(env)
-        behaviorNames = list(env.behavior_specs.keys())
+        behavior_specs = env.behavior_specs
+        behaviorNames = sorted(list(behavior_specs.keys()))
+        behaviorAgentDict = {}
         nagents = 0
         for behavior in behaviorNames:
             decisionSteps, _ = env.get_steps(behavior)
             njoints = len(decisionSteps.agent_id)
             nagents += njoints
+            behaviorAgentDict[behavior] = list(decisionSteps.agent_id)
+        nbodies = len(behaviorNames)
         env.close()
+        
+        return nagents, nbodies, behaviorAgentDict
 
+    def train(self):
+
+        nagents, nbodies, _ = self.getBehaviors()
         # Starting parameters for search set as:
-        # Constant  = 0
-        # Amplitude = 8
+        # Constant  =  0
+        # Amplitude =  8 
         # Frequency = 10
-        # Phase     = 0
+        # Phase     =  0
+        # Frequency is set uniformly for all joints in each morphology
 
-        es = cma.CMAEvolutionStrategy([0,8,10,0]*nagents, 0.5)
-        iteration = 0
+        es, iteration = self.findGeneration()
+        if es is None:
+            cmaOptions = {
+                "bounds": [0,10],
+                # "ftarget": -inf,
+                # "maxiter": 69,
+            }
+            es = cma.CMAEvolutionStrategy(
+                x0=[0,8,0]*nagents + [10]*nbodies, 
+                sigma0=2,
+                options=cmaOptions,
+                )
+            iteration = 0
+
         while True:
             es.optimize(self.simulateGenome, iterations=10)
             iteration+= 10
@@ -485,74 +525,165 @@ class Learner_CMA(Learner):
         #     # Phase
         #     argsThatWiggleUnnaturally[ind]+= 0
 
-        cmaArgs = self.findGeneration().result[0]
-        self.simulateGenome(cmaArgs, useEditor=True)
+        cmaArgs = self.findGeneration()[0].result[0]
+        # pdb.set_trace()
+        returnActions = {}
+        self.simulateGenome(
+            cmaArgs, 
+            worker_id=2, 
+            # instance="editor",
+            instance="build", 
+            returnActions=returnActions)
+
+        # print(actions)
+
+        # Printing 
+        nagents, nbodies, behaviorAgentDict = self.getBehaviors()
+        args, freqs = cmaArgs[:-nbodies], cmaArgs[-nbodies:]
+        freqs = {behavior: freq for freq, behavior 
+                 in zip(freqs, sorted(list(behaviorAgentDict.keys())))}
+        def printCMAArgs():
+            for behavior in sorted(list(behaviorAgentDict.keys())):
+                print(f"{behavior}:")
+                for i in range(len(behaviorAgentDict[behavior])):
+                    a, b, d = args[i*3:i*3+3]
+                    c = freqs[behavior]
+                    shift = self.a(a)
+                    amp   = self.b(b)
+                    freq  = self.c(c)
+                    phase = self.d(d)
+                    print(f"{shift:8.4f} + {amp:8.4f}*sin({freq:8.4f}*x + {phase:8.4f});" + 
+                          f"({a:8.4f}, {c:8.4f}, {c:8.4f}, {d:8.4f})")
+        printCMAArgs()
+
+        # Plotting
+        import matplotlib.pyplot as plt
+        reducedActionKeys = [key for key in returnActions] # use for individual plotting
+        # reducedActionKeys = [key for key in returnActions if key.startswith("queen")]
+        figure, axis = plt.subplots(1,2)
+        for i in range(2):
+            for action in reducedActionKeys:
+                if action.startswith("queen") or True:
+                    timePoints = [i/50 for i in range(len(returnActions[action][i]))] # 50 steps per second
+                    axis[i].plot(timePoints, returnActions[action][i], label=action)
+            axis[i].set_xlabel("Time [s]")
+            axis[i].set_ylabel("Angle [degrees]")
+        axis[0].set_title("Controller signal sent")
+        axis[1].set_title("Actual joint angle")
+        plt.legend()
+        plt.show()
+        # pdb.set_trace()
 
 
-    def simulateGenome(self, cmaArgs, useEditor=False):
-        # Needs a new simulateGenome because old one was dependent on genome
+    def simulateGenome(self, cmaArgs, worker_id=1, instance=None, returnActions=None,):
+        if returnActions is not None:
+            if not isinstance(returnActions, dict):
+                raise NotImplemented("simulateGenome given a non-dict returnActions argument")
         simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
 
 
-        if not useEditor:
+        if instance is None:
             env = UnityEnvironment(
                 file_name=self.CONFIG_DETAILS["exeFilepath"],
                 seed=self.CONFIG_DETAILS.getint("unitySeed"), 
                 side_channels=[], 
                 no_graphics=True,
-                worker_id=1,
+                worker_id=worker_id,
                 timeout_wait=self.CONFIG_DETAILS.getint("simulationTimeout"),
             )
-        else:
+        elif instance.lower() == "build":
+            env = UnityEnvironment(
+                file_name=self.CONFIG_DETAILS["exeFilepath"],
+                seed=self.CONFIG_DETAILS.getint("unitySeed"), 
+                side_channels=[], 
+                no_graphics=False,
+                worker_id=worker_id,
+                timeout_wait=self.CONFIG_DETAILS.getint("simulationTimeout"),
+            )
+        elif instance.lower() == "editor":
             print("Please start environment")
             env = UnityEnvironment()
             print("Environment Found")
+        else:
+            raise Exception("Unity instance argument not recognized")
 
 
         env.reset()
 
         self.assertBehaviorNames(env)
-        behaviorNames = list(env.behavior_specs.keys())
+        behaviorNames = sorted(list(env.behavior_specs.keys()))
         # print(behaviorNames)
         # simulationSteps=0
-        reward = {behavior:0 for behavior in behaviorNames}
-        allJoints = [behavior + str(agentID) 
+        reward = {behavior:[] for behavior in behaviorNames}
+        allJoints = [behavior + "?agent=" + str(agentID) 
                      for behavior in behaviorNames 
                      for agentID in env.get_steps(behavior)[0].agent_id]
-        network = {
-            # Creates individual functions as A + B*sin(C*x + D)
-            # for each joint
-            behavior: lambda step: # (position argument, amplitude value)
-            (cmaArgs[4*i+0] + (cmaArgs[4*i+1]
-            *np.sin(cmaArgs[4*i+2]*step + cmaArgs[4*i+3])))
-            for i, behavior in enumerate(allJoints)
-        }
+        
+        nbodies = len(behaviorNames)
+        args, freqs = cmaArgs[:-nbodies], cmaArgs[-nbodies:]
+        freqs = {behavior: freq for freq, behavior in zip(freqs, behaviorNames)}
 
+        # network = {
+        #     # Creates individual functions as 
+        #     # A + B*sin(C*x + D) for each joint
+        #     behavior: lambda i, step:
+        #     (self.a*cmaArgs[4*i+0] + (self.b*cmaArgs[4*i+1]
+        #     *np.sin(self.c*cmaArgs[4*i+2]*step + self.d*cmaArgs[4*i+3])))
+        #     for i, behavior in enumerate(allJoints)
+        # }
+
+        network = {}
+        i = 0
+        for behavior in behaviorNames:
+            for agentID in env.get_steps(behavior)[0].agent_id:
+                freq = freqs[behavior]/5
+                func = lambda i, step: ( 
+                    self.a(args[3*i+0]) + (self.b(args[3*i+1])
+                    *np.sin(self.c(freq*step) + self.d(args[3*i+2])))
+                )
+                joint = behavior + "?agent=" + str(agentID) 
+                network[joint] = func
+                i+=3
+                
+
+        if returnActions is not None:
+            for joint in allJoints:
+                returnActions[joint] = ([], [])
+                # (sent signal, actual joint angle)
 
         for step in range(simulationSteps):
-            timeVal = step/20 # number of seconds that have passed
+            timeVal = step/50 # number of seconds that have passed
+
+            i = 0
             for behavior in behaviorNames:
                 decisionSteps, _ = env.get_steps(behavior)
 
-                for id in decisionSteps.agent_id:
-                    jointstr = behavior+str(id)
-                    action = network[jointstr](timeVal)
+                for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                    jointstr = behavior + "?agent=" + str(id)
+                    action = network[jointstr](i, timeVal)
+                    i+=1
+
+                    if returnActions is not None:
+                        returnActions[jointstr][0].append(action)
+                        returnActions[jointstr][1].append((obs[2])*180/np.pi)
+                        # 3rd observation point should be own rotation
+
                     action = ActionTuple(
                         np.array((action, action)).reshape(1,2)
                         )
                     env.set_action_for_agent(behavior, id, action)
 
-                reward[behavior] +=sum(decisionSteps.reward) / len(decisionSteps.reward)
-                if reward[behavior] <= -1000: # Large negative numbers means disqualification
-                    reward[behavior] -= 1000 * (simulationSteps - step)
-                    break
+                reward[behavior].append(sum(decisionSteps.reward) / len(decisionSteps.reward))
+                # if reward[behavior] <= -1000: # Large negative numbers means disqualification
+                #     reward[behavior] -= 1000 * (simulationSteps - step)
+                #     break
 
             env.step()
         env.close()
 
 
-        for key in reward:
-            reward[key] /= (self.CONFIG_DETAILS.getint("simulationSteps"))
+        # for behavior in reward:
+        #     reward[behavior] /= (self.CONFIG_DETAILS.getint("simulationSteps"))
 
         # Optimization is a minimization, and negating reward was simpler 
         # than digging through documentation for a maximization option
@@ -573,11 +704,14 @@ class Learner_CMA(Learner):
             genNumber = int(generationFile[genNumberIndent:])
             if (genNumber > lastGeneration):
                 lastGeneration = genNumber
+        
+        try:
+            with open(f"{generationFolder}\\iteration_{lastGeneration}", "rb") as infile:
+                iteration = pickle.load(infile)
+            return iteration
+        except FileNotFoundError:
+            return None, None
 
-        with open(f"{generationFolder}\\iteration_{lastGeneration}", "rb") as infile:
-            iteration = pickle.load(infile)
-
-        return iteration[0]
         
 
 
