@@ -21,9 +21,9 @@ public class MultimorphAgent : Agent {
     
     // Network output factors
     float angleChangeFactor = 1e1f;
-    float velocityChangeFactor = 1e3f;
-    float angleScalingFactor = 1.8e2f;
-    float velocityScalingFactor = 4e2f;
+    // float velocityChangeFactor = 1e3f;
+    // float angleScalingFactor = 1.8e2f;
+    // float velocityScalingFactor = 4e2f;
     
     // Robot structural factors
     float stiffnessFactor = 80;
@@ -34,7 +34,7 @@ public class MultimorphAgent : Agent {
 
     // Movement variables
     float currentTargetAngle;
-    float currentTargetVelocity;
+    // float currentTargetVelocity;
 
     // Training variables
     float rewardFactor = 1e-1f;
@@ -75,7 +75,7 @@ public class MultimorphAgent : Agent {
         MaxStep = 6400;
 
         currentTargetAngle = 0f;
-        currentTargetVelocity = 0f;
+        // currentTargetVelocity = 0f;
 
         startPosition = this.transform.position;
         startRotation = this.transform.rotation;
@@ -234,11 +234,11 @@ public class MultimorphAgent : Agent {
         // Reward is cumulated over time as horizontal displacement from origin
         // Cumulative reward rewards high initial motion.
         float reward;
-        string statement = "";
+        // string statement = "";
         if (disqualified || transform.position[1] > disqualificationHeight){
             disqualified = true;
             reward = disqualificationPunishment;
-            statement = ", because it is DISQUALIFIED";
+            // statement = ", because it is DISQUALIFIED";
         } else {
             reward = rewardFactor*(float)Math.Sqrt(
                 Math.Pow(transform.position[0] - startPosition[0], 2)
@@ -305,7 +305,7 @@ public class MultimorphAgent : Agent {
 
         // Until we think we need the actual smoothing, we're going to just make it work like this
         currentTargetAngle = newTargetAngleNormalized * angleChangeFactor;
-        currentTargetVelocity = newTargetVelocityNormalized * velocityChangeFactor;
+        // currentTargetVelocity = newTargetVelocityNormalized * velocityChangeFactor;
 
         var drive = articulationBody.xDrive;
         drive.stiffness = stiffnessFactor;

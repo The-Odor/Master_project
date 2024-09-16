@@ -445,8 +445,8 @@ class Learner_CMA(Learner):
         # c (freqc): c0
         # e (phase): e0*(tau/10)
         self.a = lambda x: 24*(x-5) # So it may lock angle to min angle -60 and max angle +60 
-        self.b = lambda x: 12*x # scale to max angle +-60. Further expanded due all values moving towards 10
-        self.c = lambda x: 2*x # Previously trained models landed frequency 10
+        self.b = lambda x: 24*x # scale to max angle +-60. Further expanded due all values moving towards 10
+        self.c = lambda x: 8*x # Previously trained models landed frequency 10
         self.d = lambda x: x*(2*np.pi/10) # tau is a full phase
 
     def getBehaviors(self):
@@ -531,8 +531,8 @@ class Learner_CMA(Learner):
         self.simulateGenome(
             cmaArgs, 
             worker_id=2, 
-            # instance="editor",
-            instance="build", 
+            instance="editor",
+            # instance="build", 
             returnActions=returnActions)
 
         # print(actions)
@@ -543,17 +543,19 @@ class Learner_CMA(Learner):
         freqs = {behavior: freq for freq, behavior 
                  in zip(freqs, sorted(list(behaviorAgentDict.keys())))}
         def printCMAArgs():
+            i = 0
             for behavior in sorted(list(behaviorAgentDict.keys())):
                 print(f"{behavior}:")
-                for i in range(len(behaviorAgentDict[behavior])):
+                for _ in range(len(behaviorAgentDict[behavior])):
                     a, b, d = args[i*3:i*3+3]
                     c = freqs[behavior]
                     shift = self.a(a)
                     amp   = self.b(b)
                     freq  = self.c(c)
                     phase = self.d(d)
-                    print(f"{shift:8.4f} + {amp:8.4f}*sin({freq:8.4f}*x + {phase:8.4f});" + 
-                          f"({a:8.4f}, {c:8.4f}, {c:8.4f}, {d:8.4f})")
+                    print(f"{shift:8.4f} + {amp:8.4f}*sin({freq:8.4f}*x + {phase/(2*np.pi):8.4f}\u03C4)" + 
+                          " ; " + f"({a:9.3f}, {b:8.4f}, {c:8.4f}, {d:8.4f})")
+                    i += 1
         printCMAArgs()
 
         # Plotting
