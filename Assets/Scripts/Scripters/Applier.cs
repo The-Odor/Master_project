@@ -75,6 +75,9 @@ public class Applier : MonoBehaviour {
                     if (child.GetComponent<DecisionRequester>()==null) {
                         child.gameObject.AddComponent<DecisionRequester>();
                     }
+                } else {
+                    // Changes tag to root
+                    child.gameObject.tag = "root";
                 }
                 // Edits xDrive parameters    
                 var drive = child.GetComponent<ArticulationBody>().xDrive;
