@@ -21,6 +21,54 @@ import cma
 class Learner():
     def __init__(self, config_details):
         self.CONFIG_DETAILS = config_details
+
+    def rewardAggregation(self, rewards):
+        # Reward for a single behavior is equivalent to final distance
+        for behavior in rewards:
+            rewards[behavior] = rewards[behavior][-1]
+
+        # Different behaviors undergo simple summation
+        return sum(rewards.values())
+    
+    def assertBehaviorNames(self, env):
+        assert len(list(env.behavior_specs.keys())) != 0,\
+         (f"There are no behaviours in the "
+          f"Unity environment: {list(env.behavior_specs.keys())}")
+
+    def simulateGenome(self):
+        # TODO: Put actual Unity control structure into own function.
+        #       Is it beneficial? Does the requirement for a loop 
+        #       make this common function useless?
+        raise NotImplemented()
+    
+    def getBehaviors(self):
+        # Trick: Open up an instance of Unity, extract the names,
+        #        then close it again, for automatic dimensionality!
+        env = UnityEnvironment(
+            file_name=self.CONFIG_DETAILS["exeFilepath"],
+            no_graphics=True,
+            worker_id=30
+        )
+        env.reset()
+        self.assertBehaviorNames(env)
+        behavior_specs = env.behavior_specs
+        behaviorNames = sorted(list(behavior_specs.keys()))
+        behaviorAgentDict = {}
+        nagents = 0
+        for behavior in behaviorNames:
+            decisionSteps, _ = env.get_steps(behavior)
+            njoints = len(decisionSteps.agent_id)
+            nagents += njoints
+            behaviorAgentDict[behavior] = list(decisionSteps.agent_id)
+        nbodies = len(behaviorNames)
+        env.close()
+        
+        return nagents, nbodies, behaviorAgentDict
+
+
+class Learner_NEAT():
+    def __init__(self,config_details):
+        Learner.__init__(self,config_details)
         self.NEAT_CONFIG = neat.Config(
             neat.DefaultGenome,
             neat.DefaultReproduction,
@@ -28,7 +76,6 @@ class Learner():
             neat.DefaultStagnation,
             self.CONFIG_DETAILS["configFilepath"]
         )
-        pass
 
     def fitnessFuncTest(self,genome,config):
         _, gen = genome 
@@ -108,14 +155,6 @@ class Learner():
         #           "last instance was DISQUALIFIED")
 
         return self.rewardAggregation(reward)
-        
-    def rewardAggregation(self, rewards):
-        # Reward for a single behavior is equivalent to final distance
-        for behavior in rewards:
-            rewards[behavior] = rewards[behavior][-1]
-
-        # Different behaviors undergo simple summation
-        return sum([reward for _, reward in rewards.items()])
 
     def fitnessFunc(self,genome,config,queue):
         # return self.fitnessFuncTest(genome,config)
@@ -377,13 +416,6 @@ class Learner():
         else:
             print(f"DISC")
 
-
-
-    def assertBehaviorNames(self, env):
-        assert len(list(env.behavior_specs.keys())) != 0,\
-         (f"There are no behaviours in the "
-          f"Unity environment: {list(env.behavior_specs.keys())}")
-
     def motionTest(self):
         # Applies basic motion for visual evaluation of physical rules
         print("Please start environment")
@@ -449,32 +481,8 @@ class Learner_CMA(Learner):
         self.c = lambda x: 8*x # Previously trained models landed frequency 10
         self.d = lambda x: x*(2*np.pi/10) # tau is a full phase
 
-    def getBehaviors(self):
-        # Trick: Open up an instance of Unity, extract the names,
-        #        then close it again, for automatic dimensionality!
-        env = UnityEnvironment(
-            file_name=self.CONFIG_DETAILS["exeFilepath"],
-            no_graphics=True,
-            worker_id=30
-        )
-        env.reset()
-        self.assertBehaviorNames(env)
-        behavior_specs = env.behavior_specs
-        behaviorNames = sorted(list(behavior_specs.keys()))
-        behaviorAgentDict = {}
-        nagents = 0
-        for behavior in behaviorNames:
-            decisionSteps, _ = env.get_steps(behavior)
-            njoints = len(decisionSteps.agent_id)
-            nagents += njoints
-            behaviorAgentDict[behavior] = list(decisionSteps.agent_id)
-        nbodies = len(behaviorNames)
-        env.close()
-        
-        return nagents, nbodies, behaviorAgentDict
 
     def train(self):
-
         nagents, nbodies, _ = self.getBehaviors()
         # Starting parameters for search set as:
         # Constant  =  0
