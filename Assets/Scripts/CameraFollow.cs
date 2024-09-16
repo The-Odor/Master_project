@@ -8,7 +8,7 @@ public class CameraFollow : MonoBehaviour
     // public Transform[] objectsToFollow; // List of objects to follow
     [Range(0,22)]
     public float minDistance = 5f; // Slider for adjusting minimum distance
-    public float smoothSpeed = 0.125f; // Smoothing factor for camera movement
+    public float smoothSpeed = 2*0.125f; // Smoothing factor for camera movement
     public Vector3 offset = new Vector3(0, 10, 10); // Offset from the object
 
     private Transform target; // Current target object
@@ -64,19 +64,22 @@ public class CameraFollow : MonoBehaviour
             transform.position, 
             desiredPosition
         );
-        if (distance < minDistance) {
-            // Calculate new position with minimum distance
-            Vector3 direction = (
-                desiredPosition - transform.position).normalized;
-            desiredPosition = target.position + direction * minDistance;
+        if (distance <= minDistance) {
+            // If camera too close, move away to minimum distance
+            // Vector3 direction = (
+            //     // target.position - transform.position).normalized;
+            //     desiredPosition - transform.position).normalized;
+            // desiredPosition = target.position + direction * minDistance;
+            Vector3 correction = transform.position - target.position;
+            transform.position = target.position + correction*minDistance;
+        } else {
+            // Smoothly move the camera towards the desired position
+            Vector3 smoothedPosition = Vector3.Lerp(
+                transform.position, desiredPosition, 
+                smoothSpeed * Time.deltaTime
+            );
+            transform.position = smoothedPosition;
         }
-
-        // Smoothly move the camera towards the desired position
-        Vector3 smoothedPosition = Vector3.Lerp(
-            transform.position, desiredPosition, 
-            smoothSpeed * Time.deltaTime
-        );
-        transform.position = smoothedPosition;
 
         // Make the camera look at the target object
         transform.LookAt(target);

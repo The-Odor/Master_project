@@ -26,9 +26,9 @@ public class MultimorphAgent : Agent {
     // float velocityScalingFactor = 4e2f;
     
     // Robot structural factors
-    float stiffnessFactor = 80;
+    float stiffnessFactor = 8;
     float dampingFactor = 1;
-    float forceLimitFactor = 3.402823e30f;
+    float forceLimitFactor = 3.402823e3f;
     float angleUpperLimit = 60;
     float angleLowerLimit = -60;
 
