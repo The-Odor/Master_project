@@ -37,7 +37,7 @@ public class MultimorphAgent : Agent {
     // float currentTargetVelocity;
 
     // Training variables
-    float rewardFactor = 1e-1f;
+    float rewardFactor = 1e-0f;
     bool disqualified = false;
     float disqualificationHeight = 10;
     float disqualificationPunishment = -1e3f;

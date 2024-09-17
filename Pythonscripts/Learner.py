@@ -495,14 +495,14 @@ class Learner_CMA(Learner):
         if es is None:
             cmaOptions = {
                 "bounds": [0,10],
-                # "ftarget": -inf,
+                # "ftarget": np.inf,
                 # "maxiter": 69,
             }
             es = cma.CMAEvolutionStrategy(
                 x0=[0,8,0]*nagents + [10]*nbodies, 
                 sigma0=2,
                 options=cmaOptions,
-                )
+            )
             iteration = 0
 
         while True:
@@ -539,8 +539,8 @@ class Learner_CMA(Learner):
         self.simulateGenome(
             cmaArgs, 
             worker_id=2, 
-            instance="editor",
-            # instance="build", 
+            # instance="editor",
+            instance="build", 
             returnActions=returnActions)
 
         # print(actions)
@@ -687,6 +687,13 @@ class Learner_CMA(Learner):
                 # if reward[behavior] <= -1000: # Large negative numbers means disqualification
                 #     reward[behavior] -= 1000 * (simulationSteps - step)
                 #     break
+
+            if False:
+                print("Reward: ", end="")
+                for r in reward.values():
+                    print(f"{r[-1]:5.2e}     ", end="")
+                print()
+
 
             env.step()
         env.close()
