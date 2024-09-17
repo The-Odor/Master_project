@@ -584,6 +584,35 @@ class Learner_CMA(Learner):
         plt.show()
         # pdb.set_trace()
 
+    def makeControllers(self, cmaArgs):
+        # network = {
+        #     # Creates individual functions as 
+        #     # A + B*sin(C*x + D) for each joint
+        #     behavior: lambda i, step:
+        #     (self.a*cmaArgs[4*i+0] + (self.b*cmaArgs[4*i+1]
+        #     *np.sin(self.c*cmaArgs[4*i+2]*step + self.d*cmaArgs[4*i+3])))
+        #     for i, behavior in enumerate(allJoints)
+        # }
+
+        nagents, nbodies, behaviorAgentDict = self.getBehaviors()
+
+        args, freqs = cmaArgs[:-nbodies], cmaArgs[-nbodies:]
+        freqs = {behavior: freq for freq, behavior in zip(freqs, behaviorAgentDict.keys())}
+
+        network = {}
+        i = 0
+        for behavior in behaviorAgentDict.keys():
+            for agentID in behaviorAgentDict[behavior]:
+                freq = freqs[behavior]/5
+                func = lambda i, step: ( 
+                    self.a(args[3*i+0]) + (self.b(args[3*i+1])
+                    *np.sin(self.c(freq*step) + self.d(args[3*i+2])))
+                )
+                joint = behavior + "?agent=" + str(agentID) 
+                network[joint] = func
+                i+=3
+
+        return network
 
     def simulateGenome(self, cmaArgs, worker_id=1, instance=None, returnActions=None,):
         if returnActions is not None:
@@ -622,39 +651,13 @@ class Learner_CMA(Learner):
 
         self.assertBehaviorNames(env)
         behaviorNames = sorted(list(env.behavior_specs.keys()))
-        # print(behaviorNames)
-        # simulationSteps=0
-        reward = {behavior:[] for behavior in behaviorNames}
+        network = self.makeControllers(cmaArgs)
+
         allJoints = [behavior + "?agent=" + str(agentID) 
                      for behavior in behaviorNames 
                      for agentID in env.get_steps(behavior)[0].agent_id]
-        
-        nbodies = len(behaviorNames)
-        args, freqs = cmaArgs[:-nbodies], cmaArgs[-nbodies:]
-        freqs = {behavior: freq for freq, behavior in zip(freqs, behaviorNames)}
 
-        # network = {
-        #     # Creates individual functions as 
-        #     # A + B*sin(C*x + D) for each joint
-        #     behavior: lambda i, step:
-        #     (self.a*cmaArgs[4*i+0] + (self.b*cmaArgs[4*i+1]
-        #     *np.sin(self.c*cmaArgs[4*i+2]*step + self.d*cmaArgs[4*i+3])))
-        #     for i, behavior in enumerate(allJoints)
-        # }
-
-        network = {}
-        i = 0
-        for behavior in behaviorNames:
-            for agentID in env.get_steps(behavior)[0].agent_id:
-                freq = freqs[behavior]/5
-                func = lambda i, step: ( 
-                    self.a(args[3*i+0]) + (self.b(args[3*i+1])
-                    *np.sin(self.c(freq*step) + self.d(args[3*i+2])))
-                )
-                joint = behavior + "?agent=" + str(agentID) 
-                network[joint] = func
-                i+=3
-                
+        reward = {behavior:[] for behavior in behaviorNames}
 
         if returnActions is not None:
             for joint in allJoints:
