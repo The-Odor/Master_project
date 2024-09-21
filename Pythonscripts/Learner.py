@@ -76,6 +76,7 @@ class Learner_NEAT():
             neat.DefaultStagnation,
             self.CONFIG_DETAILS["configFilepath"]
         )
+        self.learnerCMA = Learner_CMA(config_details)
 
     def fitnessFuncTest(self,genome,config):
         _, gen = genome 
@@ -156,8 +157,22 @@ class Learner_NEAT():
 
         return self.rewardAggregation(reward)
 
+    def approximateSineFunc(self, genome, config):
+        network = neat.nn.RecurrentNetwork.create(genome, config)
+        nagents, nbodies, behaviorAgentDict = self.getBehaviors()
+
+        jointNamer = lambda behavior, agentID: behavior + "?agent=" + str(agentID)
+
+        for step in range(self.CONFIG_DETAILS.getint("simulationSteps")):
+            for behavior in behaviorAgentDict:
+                for agent in behaviorAgentDict[behavior]:
+                    joint = jointNamer(behavior,agent)
+                    
+
+
     def fitnessFunc(self,genome,config,queue):
         # return self.fitnessFuncTest(genome,config)
+        return self.approximateSineFunc(genome, config)
 
         worker_id = queue.get()
     
