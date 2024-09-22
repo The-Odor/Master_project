@@ -484,7 +484,7 @@ class Learner_NEAT():
 class Learner_CMA(Learner):
     def __init__(self,config_details):
         Learner.__init__(self,config_details)
-        # Magical numbers to map CMAArgs from optimal CMA-range (0-10)*
+        # Magical numbers to map self.cmaArgs from optimal CMA-range (0-10)*
         # onto optimal joint range (parameter-dependent, see comments)
         # *https://cma-es.github.io/cmaes_sourcecode_page.html#practical
         # a (shift): (a0-5)*(60/5) = 12*(a0-5)
@@ -495,6 +495,20 @@ class Learner_CMA(Learner):
         self.b = lambda x: 24*x # scale to max angle +-60. Further expanded due all values moving towards 10
         self.c = lambda x: 8*x # Previously trained models landed frequency 10
         self.d = lambda x: x*(2*np.pi/10) # tau is a full phase
+
+        self.controllerFormat = 2
+        # 1: A controller per joint, morphologies share frequencies
+        # 2: A controller per morphology
+        # 3: Only one controller (not implemented)
+
+        generation = self.findGeneration()[0]
+        if generation is None:
+            self.cmaArgs = None
+            self.network = None
+        else:
+            self.cmaArgs = generation.result[0]
+            self.network = self.makeControllers()
+        
 
 
     def train(self):
@@ -513,8 +527,12 @@ class Learner_CMA(Learner):
                 # "ftarget": np.inf,
                 # "maxiter": 69,
             }
+            x0ByFormat = {
+                1: [5,8,7]*nagents + [5]*nbodies, # Indendent controllers that share frequency
+                2: [5,8,7,5]*nbodies, # One controller per body
+            }
             es = cma.CMAEvolutionStrategy(
-                x0=[0,8,0]*nagents + [10]*nbodies, 
+                x0=x0ByFormat[self.controllerFormat],
                 sigma0=2,
                 options=cmaOptions,
             )
@@ -531,38 +549,24 @@ class Learner_CMA(Learner):
         print(es.result)
 
     def demonstrateGenome(self):
-        # argsThatWiggleUnnaturally = [
-        #         -0.07355574, -1.70311053,  2.26106487,  6.2765652 , 
-        #         -3.35534422, -0.10351327,  0.21064545, -3.54712654, 
-        #         -5.2254731 ,  3.74792834, -4.02749407, -1.14582858]
-        # for ind in [0, 4, 8]:
-        #     # Constant
-        #     argsThatWiggleUnnaturally[ind]*= 0
-        # for ind in [1, 5, 9]:
-        #     # Amplitude
-        #     argsThatWiggleUnnaturally[ind]*= 8
-        # for ind in [2, 6, 10]:
-        #     # Frequency
-        #     argsThatWiggleUnnaturally[ind]*= 5
-        # for ind in [3, 7, 11]:
-        #     # Phase
-        #     argsThatWiggleUnnaturally[ind]+= 0
+        if self.cmaArgs is None:
+            raise Exception("No generation file found")
 
-        cmaArgs = self.findGeneration()[0].result[0]
         # pdb.set_trace()
         returnActions = {}
         self.simulateGenome(
-            cmaArgs, 
+            self.cmaArgs, 
             worker_id=2, 
             # instance="editor",
             instance="build", 
-            returnActions=returnActions)
+            returnActions=returnActions,
+        )
 
         # print(actions)
 
         # Printing 
         nagents, nbodies, behaviorAgentDict = self.getBehaviors()
-        args, freqs = cmaArgs[:-nbodies], cmaArgs[-nbodies:]
+        args, freqs = self.cmaArgs[:-nbodies], self.cmaArgs[-nbodies:]
         freqs = {behavior: freq for freq, behavior 
                  in zip(freqs, sorted(list(behaviorAgentDict.keys())))}
         def printCMAArgs():
@@ -599,37 +603,60 @@ class Learner_CMA(Learner):
         plt.show()
         # pdb.set_trace()
 
-    def makeControllers(self, cmaArgs):
-        # network = {
-        #     # Creates individual functions as 
-        #     # A + B*sin(C*x + D) for each joint
-        #     behavior: lambda i, step:
-        #     (self.a*cmaArgs[4*i+0] + (self.b*cmaArgs[4*i+1]
-        #     *np.sin(self.c*cmaArgs[4*i+2]*step + self.d*cmaArgs[4*i+3])))
-        #     for i, behavior in enumerate(allJoints)
-        # }
+    def makeControllers(self, cmaArgs=None):
+        if cmaArgs is None:
+            cmaArgs = self.cmaArgs
 
-        nagents, nbodies, behaviorAgentDict = self.getBehaviors()
+        _, nbodies, behaviorAgentDict = self.getBehaviors()
 
-        args, freqs = cmaArgs[:-nbodies], cmaArgs[-nbodies:]
-        freqs = {behavior: freq for freq, behavior in zip(freqs, behaviorAgentDict.keys())}
+       
+        if self.controllerFormat == 1:
+            args, freqs = cmaArgs[:-nbodies], cmaArgs[-nbodies:]
+            freqs = {behavior: freq for freq, behavior in zip(freqs, behaviorAgentDict.keys())}
 
-        network = {}
-        i = 0
-        for behavior in behaviorAgentDict.keys():
-            for agentID in behaviorAgentDict[behavior]:
-                freq = freqs[behavior]/5
-                func = lambda i, step: ( 
-                    self.a(args[3*i+0]) + (self.b(args[3*i+1])
-                    *np.sin(self.c(freq*step) + self.d(args[3*i+2])))
-                )
-                joint = behavior + "?agent=" + str(agentID) 
-                network[joint] = func
-                i+=3
+            network = {}
+            i = 0
+            for behavior in behaviorAgentDict.keys():
+                for agentID in behaviorAgentDict[behavior]:
+                    freq = freqs[behavior]/5 # TODO: Why is this divided by 5
+                    
+                    def func(step, vals=args[3*i:(i+1)*3], freq=freq):
+                        pdb.set_trace()
+                        shift, amp, phase = vals
+                        result = self.a(shift) + (self.b(amp)
+                                 *np.sin(self.c(freq*step) + self.d(phase)))
+                        return result
+
+                    joint = behavior + "?agent=" + str(agentID) 
+                    network[joint] = func
+                    i+=1
+
+        if self.controllerFormat == 2:
+            args = cmaArgs[:]
+            network = {}
+            i = 0
+            for i, behavior in enumerate(sorted(list(behaviorAgentDict.keys()))):
+                for agentID in behaviorAgentDict[behavior]:
+                    def func(step, vals=args[4*i:4*(i+1)]):
+                        shift, amp, freq, phase = vals
+                        result = self.a(shift) + (self.b(amp)
+                                 *np.sin(self.c(freq*step) + self.d(phase)))
+                        return result
+                    joint = behavior + "?agent=" + str(agentID) 
+                    network[joint] = func
+                
+
+
+                        
 
         return network
+    
+    def readController(self, jointstr):
+        # TODO
+        raise NotImplemented
+        return action
 
-    def simulateGenome(self, cmaArgs, worker_id=1, instance=None, returnActions=None,):
+    def simulateGenome(self, cmaArgs=None, worker_id=1, instance=None, returnActions=None,):
         if returnActions is not None:
             if not isinstance(returnActions, dict):
                 raise NotImplemented("simulateGenome given a non-dict returnActions argument")
@@ -666,7 +693,6 @@ class Learner_CMA(Learner):
 
         self.assertBehaviorNames(env)
         behaviorNames = sorted(list(env.behavior_specs.keys()))
-        network = self.makeControllers(cmaArgs)
 
         allJoints = [behavior + "?agent=" + str(agentID) 
                      for behavior in behaviorNames 
@@ -679,6 +705,11 @@ class Learner_CMA(Learner):
                 returnActions[joint] = ([], [])
                 # (sent signal, actual joint angle)
 
+        if cmaArgs is None:
+            network = self.network
+        else:
+            network = self.makeControllers(cmaArgs)
+
         for step in range(simulationSteps):
             timeVal = step/50 # number of seconds that have passed
 
@@ -688,7 +719,7 @@ class Learner_CMA(Learner):
 
                 for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                     jointstr = behavior + "?agent=" + str(id)
-                    action = network[jointstr](i, timeVal)
+                    action = network[jointstr](timeVal)
                     i+=1
 
                     if returnActions is not None:
