@@ -16,8 +16,9 @@ reset_on_extinction = False
 
 [DefaultGenome]
 # Network options
-num_inputs = 12
-num_outputs = 2
+# Added input of previous output
+num_inputs = 13 
+num_outputs = 1
 num_hidden = 12
 
 # Activation options

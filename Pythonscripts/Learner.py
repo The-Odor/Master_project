@@ -563,27 +563,40 @@ class Learner_CMA(Learner):
             returnActions=returnActions,
         )
 
-        # print(actions)
-
         # Printing 
-        nagents, nbodies, behaviorAgentDict = self.getBehaviors()
-        args, freqs = self.cmaArgs[:-nbodies], self.cmaArgs[-nbodies:]
-        freqs = {behavior: freq for freq, behavior 
-                 in zip(freqs, sorted(list(behaviorAgentDict.keys())))}
         def printCMAArgs():
-            i = 0
-            for behavior in sorted(list(behaviorAgentDict.keys())):
-                print(f"{behavior}:")
-                for _ in range(len(behaviorAgentDict[behavior])):
-                    a, b, d = args[i*3:i*3+3]
-                    c = freqs[behavior]
-                    shift = self.a(a)
-                    amp   = self.b(b)
-                    freq  = self.c(c)
-                    phase = self.d(d)
-                    print(f"{shift:8.4f} + {amp:8.4f}*sin({freq:8.4f}*x + {phase/(2*np.pi):8.4f}\u03C4)" + 
-                          " ; " + f"({a:9.3f}, {b:8.4f}, {c:8.4f}, {d:8.4f})")
-                    i += 1
+            nagents, nbodies, behaviorAgentDict = self.getBehaviors()
+            if self.controllerFormat == 1:
+                args, freqs = self.cmaArgs[:-nbodies], self.cmaArgs[-nbodies:]
+                freqs = {behavior: freq for freq, behavior 
+                        in zip(freqs, sorted(list(behaviorAgentDict.keys())))}
+                i = 0
+                for behavior in sorted(list(behaviorAgentDict.keys())):
+                    print(f"{behavior}:")
+                    for _ in range(len(behaviorAgentDict[behavior])):
+                        a, b, d = args[i*3:i*3+3]
+                        c = freqs[behavior]
+                        shift = self.a(a)
+                        amp   = self.b(b)
+                        freq  = self.c(c)
+                        phase = self.d(d)
+                        print(f"{shift:8.4f} + {amp:8.4f}*sin({freq:8.4f}*x + {phase/(2*np.pi):8.4f}\u03C4)" + 
+                            " ; " + f"({a:9.3f}, {b:8.4f}, {c:8.4f}, {d:8.4f})")
+                        i += 1
+            elif self.controllerFormat == 2:
+                raise NotImplemented
+            elif self.controllerFormat == 3:
+                a, b, c, d = self.cmaArgs
+                shift = self.a(a)
+                amp   = self.b(b)
+                freq  = self.c(c)
+                phase = self.d(d)
+                print(f"{shift:8.4f} + {amp:8.4f}*sin({freq:8.4f}*x + {phase/(2*np.pi):8.4f}\u03C4)" + 
+                    " ; " + f"({a:9.3f}, {b:8.4f}, {c:8.4f}, {d:8.4f})")
+
+                print("Controller:")
+
+
         printCMAArgs()
 
         # Plotting
