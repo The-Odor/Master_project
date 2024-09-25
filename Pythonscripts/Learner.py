@@ -76,7 +76,6 @@ class Learner_NEAT():
             neat.DefaultStagnation,
             self.CONFIG_DETAILS["configFilepath"]
         )
-        self.learnerCMA = Learner_CMA(config_details)
 
     def fitnessFuncTest(self,genome,config):
         _, gen = genome 
@@ -106,10 +105,10 @@ class Learner_NEAT():
 
         self.assertBehaviorNames(env)
         behaviorNames = sorted(list(env.behavior_specs.keys()))
-        # behaviorName = behaviorNames[0]
+
         reward = {behavior:0 for behavior in behaviorNames}
 
-        for t in range(simulationSteps):
+        for step in range(simulationSteps):
             for behaviorName in behaviorNames:
                 decisionSteps, _ = env.get_steps(behaviorName)
                 # observations = []
@@ -135,7 +134,7 @@ class Learner_NEAT():
 
                 reward[behaviorName] +=sum(decisionSteps.reward) / len(decisionSteps.reward)
                 if reward[behaviorName] <= -1000: # Large negative numbers means disqualification
-                    reward[behaviorName] -= 1000 * (simulationSteps - t)
+                    reward[behaviorName] -= 1000 * (simulationSteps - step)
                     break
 
             env.step()
@@ -156,19 +155,6 @@ class Learner_NEAT():
         #           "last instance was DISQUALIFIED")
 
         return self.rewardAggregation(reward)
-
-    def approximateSineFunc(self, genome, config):
-        network = neat.nn.RecurrentNetwork.create(genome, config)
-        nagents, nbodies, behaviorAgentDict = self.getBehaviors()
-
-        jointNamer = lambda behavior, agentID: behavior + "?agent=" + str(agentID)
-
-        for step in range(self.CONFIG_DETAILS.getint("simulationSteps")):
-            for behavior in behaviorAgentDict:
-                for agent in behaviorAgentDict[behavior]:
-                    joint = jointNamer(behavior,agent)
-                    
-
 
     def fitnessFunc(self,genome,config,queue):
         # return self.fitnessFuncTest(genome,config)
@@ -476,6 +462,74 @@ class Learner_NEAT():
             config = self.NEAT_CONFIG
         draw_net(config, genome, True)
 
+
+
+class Learner_NEAT_From_CMA(Learner_NEAT):
+    def __init__(self,config_details):
+        Learner.__init__(self,config_details)
+        self.learnerCMA = Learner_CMA(config_details)
+
+
+    def simulateGenome(self, genome, config, env):
+        if isinstance(genome, tuple) and len(genome)==2:
+            genID, gen = genome
+        elif isinstance(genome, neat.genome.DefaultGenome):
+            genID, gen = ("no id", genome)
+        else:
+            raise TypeError(f"genome of unreadable type: {genome}")
+
+        simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
+
+        env.reset()
+
+        networkNEAT = neat.nn.RecurrentNetwork.create(gen, config)
+
+        self.assertBehaviorNames(env)
+        behaviorNames = sorted(list(env.behavior_specs.keys()))
+
+        reward = {behavior:[] for behavior in behaviorNames}
+
+        networkCMA = self.learnerCMA.network
+        actionNEAT = 0 # Initial action value
+
+        for step in range(simulationSteps):
+            timeVal = step/50 # number of seconds that have passed
+
+            for behavior in behaviorNames:
+                decisionSteps, _ = env.get_steps(behavior)
+
+                behaviorReward = 0
+                for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                    jointstr = behavior + "?agent=" + str(id)
+                    actionCMA  = networkCMA[jointstr](timeVal)
+                    actionNEAT = networkNEAT.activate(obs)
+
+                    behaviorReward += (actionNEAT - actionCMA)**2
+
+                    action = ActionTuple(
+                        np.array((actionCMA, actionCMA)).reshape(1,2)
+                        )
+                    env.set_action_for_agent(behavior, id, action)
+
+                reward[behavior].append(-np.sqrt(behaviorReward))
+
+                # TODO: How tf to define behavior? 
+                #       Difference in command? X
+                #       Difference in result?
+
+            env.step()
+        env.close()
+
+
+        # for behavior in reward:
+        #     reward[behavior] /= (self.CONFIG_DETAILS.getint("simulationSteps"))
+
+        # Optimization is a minimization, and negating reward was simpler 
+        # than digging through documentation for a maximization option
+        return -self.rewardAggregation(reward)
+
+    def rewardAggregation(self, rewards):
+        return sum([sum(val) for val in rewards.values()])
 
 
 
