@@ -496,10 +496,10 @@ class Learner_CMA(Learner):
         self.c = lambda x: 8*x # Previously trained models landed frequency 10
         self.d = lambda x: x*(2*np.pi/10) # tau is a full phase
 
-        self.controllerFormat = 2
+        self.controllerFormat = 3
         # 1: A controller per joint, morphologies share frequencies
         # 2: A controller per morphology
-        # 3: Only one controller (not implemented)
+        # 3: Only one controller 
 
         generation = self.findGeneration()[0]
         if generation is None:
@@ -530,6 +530,7 @@ class Learner_CMA(Learner):
             x0ByFormat = {
                 1: [5,8,7]*nagents + [5]*nbodies, # Indendent controllers that share frequency
                 2: [5,8,7,5]*nbodies, # One controller per body
+                3: [5,8,7,5], # One controller, period
             }
             es = cma.CMAEvolutionStrategy(
                 x0=x0ByFormat[self.controllerFormat],
@@ -645,6 +646,19 @@ class Learner_CMA(Learner):
                     joint = behavior + "?agent=" + str(agentID) 
                     network[joint] = func
                 
+        if self.controllerFormat == 3:
+            args = cmaArgs[:]
+            network = {}
+            for behavior in behaviorAgentDict.keys():
+                for agentID in behaviorAgentDict[behavior]:
+                    def func(step, vals=args):
+                        shift, amp, freq, phase = vals
+                        result = self.a(shift) + (self.b(amp)
+                                 *np.sin(self.c(freq*step) + self.d(phase)))
+                        return result
+                    joint = behavior + "?agent=" + str(agentID) 
+                    network[joint] = func
+
 
 
                         
