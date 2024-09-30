@@ -1,29 +1,29 @@
-from MLAgentLearn import Learner, Learner_CMA, CONFIG_DETAILS
+from MLAgentLearn import Learner_NEAT, Learner_CMA, CONFIG_DETAILS
 
 
 if __name__ == "__main__":
-    learner = Learner(CONFIG_DETAILS)
+    learnerNEAT = Learner_NEAT(CONFIG_DETAILS)
     learnerCMA = Learner_CMA(CONFIG_DETAILS)
     # learner.demonstrateGenome(learner.findGeneration()[1])
 
-    case = 3
+    case = 1
 
     if case == 1:
-        # case 2:
+        # case 1:
         # creates a PDF of given genome (defaults to best of latest generation)
-        learner.makePDF(genome=None)
+        learnerNEAT.makePDF(genome=None)
         
         # Demonstrates Genomes (hence name, lol)
-        learner.demonstrateGenome()
+        learnerNEAT.demonstrateGenome()
         # learner.demonstrateGenome(learner.findGeneration()[1])
         # learner.demonstrateGenome(learner.findGeneration(specificGeneration=69)[1])
 
     elif case == 2:
-        # case 3:
+        # case 2:
         # Demonstrates simple motion in Unity editor
-        learner.motionTest()
+        learnerNEAT.motionTest()
 
     elif case == 3:
-        # case 4:
+        # case 3:
         # Demonstrates cma solution
         learnerCMA.demonstrateGenome()

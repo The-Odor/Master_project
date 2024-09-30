@@ -62,11 +62,14 @@ class Learner():
             behaviorAgentDict[behavior] = list(decisionSteps.agent_id)
         nbodies = len(behaviorNames)
         env.close()
-        
+
         return nagents, nbodies, behaviorAgentDict
+    
+    def makeJointstr(self, behavior, agentID):
+        return behavior + "?agent=" + str(agentID)
 
 
-class Learner_NEAT():
+class Learner_NEAT(Learner):
     def __init__(self,config_details):
         Learner.__init__(self,config_details)
         self.NEAT_CONFIG = neat.Config(
@@ -106,7 +109,17 @@ class Learner_NEAT():
         self.assertBehaviorNames(env)
         behaviorNames = sorted(list(env.behavior_specs.keys()))
 
-        reward = {behavior:0 for behavior in behaviorNames}
+        reward = {behavior:[] for behavior in behaviorNames}
+
+        rewardFactor = (self.CONFIG_DETAILS.getint("simulationSteps"))
+
+        actionDict = {}
+        for behavior in behaviorNames:
+            decisionSteps, _ = env.get_steps(behavior)
+            for id in decisionSteps.agent_id:
+
+                actionDict[self.makeJointstr(behavior, id)] = 0
+
 
         for step in range(simulationSteps):
             for behaviorName in behaviorNames:
@@ -125,27 +138,28 @@ class Learner_NEAT():
                 #         )
                 
                 for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-                    action = np.array(network.activate(obs)).reshape(1,2)
+                    jointstr = self.makeJointstr(behaviorName, id)
+                    # pdb.set_trace()
+                    obsExpand = np.append(np.array(obs), actionDict[jointstr])
+                    action = np.array(network.activate(obsExpand))
+                    actionTu = ActionTuple(
+                        np.array((action, action)).reshape(1,2)
+                        )
                     env.set_action_for_agent(
                         behaviorName, id,
-                        ActionTuple(np.array(action))
+                        actionTu
                     )
+                    actionDict[jointstr] = action
 
 
-                reward[behaviorName] +=sum(decisionSteps.reward) / len(decisionSteps.reward)
-                if reward[behaviorName] <= -1000: # Large negative numbers means disqualification
-                    reward[behaviorName] -= 1000 * (simulationSteps - step)
+
+                reward[behaviorName].append(sum(decisionSteps.reward) / len(decisionSteps.reward) / rewardFactor)
+                if reward[behaviorName][-1] <= -1000: # Large negative numbers means disqualification
+                    reward[behaviorName][-1] -= 1000 * (simulationSteps - step)
                     break
 
             env.step()
         env.close()
-
-
-        for key in reward:
-            reward[key] /= (self.CONFIG_DETAILS.getint("simulationSteps"))
-
-
-
 
         # if reward > 0:
         #     print(f"Reward given to {genID:<3} as {reward:.2g}; last instance was "
@@ -155,10 +169,11 @@ class Learner_NEAT():
         #           "last instance was DISQUALIFIED")
 
         return self.rewardAggregation(reward)
+    
 
     def fitnessFunc(self,genome,config,queue):
         # return self.fitnessFuncTest(genome,config)
-        return self.approximateSineFunc(genome, config)
+        # return self.approximateSineFunc(genome, config)
 
         worker_id = queue.get()
     
@@ -212,7 +227,7 @@ class Learner_NEAT():
         #case 1:
         if case == 1:
             print(f"Using serial processing")
-            for genome in genomes:
+            for genome in tqdm(genomes, total=len(genomes)-1, bar_format="{l_bar}{bar:20}{r_bar}"):
                 genome[1].fitness = self.fitnessFunc(genome, config,queue)
 
             #case 2:
@@ -464,75 +479,6 @@ class Learner_NEAT():
 
 
 
-class Learner_NEAT_From_CMA(Learner_NEAT):
-    def __init__(self,config_details):
-        Learner.__init__(self,config_details)
-        self.learnerCMA = Learner_CMA(config_details)
-
-
-    def simulateGenome(self, genome, config, env):
-        if isinstance(genome, tuple) and len(genome)==2:
-            genID, gen = genome
-        elif isinstance(genome, neat.genome.DefaultGenome):
-            genID, gen = ("no id", genome)
-        else:
-            raise TypeError(f"genome of unreadable type: {genome}")
-
-        simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
-
-        env.reset()
-
-        networkNEAT = neat.nn.RecurrentNetwork.create(gen, config)
-
-        self.assertBehaviorNames(env)
-        behaviorNames = sorted(list(env.behavior_specs.keys()))
-
-        reward = {behavior:[] for behavior in behaviorNames}
-
-        networkCMA = self.learnerCMA.network
-        actionNEAT = 0 # Initial action value
-
-        for step in range(simulationSteps):
-            timeVal = step/50 # number of seconds that have passed
-
-            for behavior in behaviorNames:
-                decisionSteps, _ = env.get_steps(behavior)
-
-                behaviorReward = 0
-                for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-                    jointstr = behavior + "?agent=" + str(id)
-                    actionCMA  = networkCMA[jointstr](timeVal)
-                    actionNEAT = networkNEAT.activate(obs)
-
-                    behaviorReward += (actionNEAT - actionCMA)**2
-
-                    action = ActionTuple(
-                        np.array((actionCMA, actionCMA)).reshape(1,2)
-                        )
-                    env.set_action_for_agent(behavior, id, action)
-
-                reward[behavior].append(-np.sqrt(behaviorReward))
-
-                # TODO: How tf to define behavior? 
-                #       Difference in command? X
-                #       Difference in result?
-
-            env.step()
-        env.close()
-
-
-        # for behavior in reward:
-        #     reward[behavior] /= (self.CONFIG_DETAILS.getint("simulationSteps"))
-
-        # Optimization is a minimization, and negating reward was simpler 
-        # than digging through documentation for a maximization option
-        return -self.rewardAggregation(reward)
-
-    def rewardAggregation(self, rewards):
-        return sum([sum(val) for val in rewards.values()])
-
-
-
 
 
 class Learner_CMA(Learner):
@@ -598,7 +544,7 @@ class Learner_CMA(Learner):
             iteration+= 10
             # pdb.set_trace()
             outfileName = self.CONFIG_DETAILS["resultsFolder"]
-            outfileName+= f"\\CMA\\iteration_{iteration}"
+            outfileName+= f"\\CMA\\format_{self.controllerFormat}\\iteration_{iteration}"
             with open(outfileName, "wb") as outfile:
                 pickle.dump((es, iteration), outfile)
         print(es.result)
@@ -638,7 +584,17 @@ class Learner_CMA(Learner):
                             " ; " + f"({a:9.3f}, {b:8.4f}, {c:8.4f}, {d:8.4f})")
                         i += 1
             elif self.controllerFormat == 2:
-                raise NotImplemented
+                for i, behavior in enumerate(sorted(list(behaviorAgentDict.keys()))):
+                    print(f"Controller for behavior {behavior}")
+                    a, b, c, d = self.cmaArgs[i*4:(i+1)*4]
+                    shift = self.a(a)
+                    amp   = self.b(b)
+                    freq  = self.c(c)
+                    phase = self.d(d)
+                    print(f"{shift:8.4f} + {amp:8.4f}*sin({freq:8.4f}*x + {phase/(2*np.pi):8.4f}\u03C4)" + 
+                        " ; " + f"({a:9.3f}, {b:8.4f}, {c:8.4f}, {d:8.4f})")
+            
+            
             elif self.controllerFormat == 3:
                 a, b, c, d = self.cmaArgs
                 shift = self.a(a)
@@ -677,7 +633,6 @@ class Learner_CMA(Learner):
 
         _, nbodies, behaviorAgentDict = self.getBehaviors()
 
-       
         if self.controllerFormat == 1:
             args, freqs = cmaArgs[:-nbodies], cmaArgs[-nbodies:]
             freqs = {behavior: freq for freq, behavior in zip(freqs, behaviorAgentDict.keys())}
@@ -688,15 +643,17 @@ class Learner_CMA(Learner):
                 for agentID in behaviorAgentDict[behavior]:
                     freq = freqs[behavior]/5 # TODO: Why is this divided by 5
                     
-                    def func(step, vals=args[3*i:(i+1)*3], freq=freq):
-                        pdb.set_trace()
+                    controllerFuncString = f"""def controllerFunc(
+                            step, vals={list(args[3*i:(i+1)*3])}, freq={freq}
+                        ):
                         shift, amp, phase = vals
-                        result = self.a(shift) + (self.b(amp)
+                        result = self.a(shift) + self.b((amp)
                                  *np.sin(self.c(freq*step) + self.d(phase)))
                         return result
+                    """
 
-                    joint = behavior + "?agent=" + str(agentID) 
-                    network[joint] = func
+                    joint = self.makeJointstr(behavior, agentID) 
+                    network[joint] = controllerFuncString
                     i+=1
 
         if self.controllerFormat == 2:
@@ -705,37 +662,43 @@ class Learner_CMA(Learner):
             i = 0
             for i, behavior in enumerate(sorted(list(behaviorAgentDict.keys()))):
                 for agentID in behaviorAgentDict[behavior]:
-                    def func(step, vals=args[4*i:4*(i+1)]):
+                    controllerFuncString=f"""def controllerFunc(
+                            step, vals={args[4*i:4*(i+1)]}
+                        ):
                         shift, amp, freq, phase = vals
                         result = self.a(shift) + (self.b(amp)
                                  *np.sin(self.c(freq*step) + self.d(phase)))
                         return result
-                    joint = behavior + "?agent=" + str(agentID) 
-                    network[joint] = func
+                    """
+                    joint = self.makeJointstr(behavior, agentID)
+                    network[joint] = controllerFuncString
                 
         if self.controllerFormat == 3:
             args = cmaArgs[:]
             network = {}
             for behavior in behaviorAgentDict.keys():
                 for agentID in behaviorAgentDict[behavior]:
-                    def func(step, vals=args):
+                    controllerFuncString=f"""
+                    def controllerFunc(
+                            step, vals={args}
+                            ):
                         shift, amp, freq, phase = vals
                         result = self.a(shift) + (self.b(amp)
                                  *np.sin(self.c(freq*step) + self.d(phase)))
                         return result
-                    joint = behavior + "?agent=" + str(agentID) 
-                    network[joint] = func
-
-
-
-                        
+                    """
+                    joint = self.makeJointstr(behavior, agentID)
+                    network[joint] = controllerFuncString
 
         return network
     
-    def readController(self, jointstr):
-        # TODO
-        raise NotImplemented
-        return action
+    def readControllerStrings(self, networkStrings):
+        network = {}
+        for jointstr in networkStrings:
+            localScope = {}
+            exec(networkStrings[jointstr], {**globals(), **locals()}, localScope)
+            network[jointstr] = localScope[list(localScope.keys())[0]]
+        return network
 
     def simulateGenome(self, cmaArgs=None, worker_id=1, instance=None, returnActions=None,):
         if returnActions is not None:
@@ -791,6 +754,8 @@ class Learner_CMA(Learner):
         else:
             network = self.makeControllers(cmaArgs)
 
+        network = self.readControllerStrings(network)
+
         for step in range(simulationSteps):
             timeVal = step/50 # number of seconds that have passed
 
@@ -799,7 +764,7 @@ class Learner_CMA(Learner):
                 decisionSteps, _ = env.get_steps(behavior)
 
                 for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
-                    jointstr = behavior + "?agent=" + str(id)
+                    jointstr = self.makeJointstr(behavior, id)
                     action = network[jointstr](timeVal)
                     i+=1
 
@@ -837,7 +802,7 @@ class Learner_CMA(Learner):
         return -self.rewardAggregation(reward)
     
     def findGeneration(self):
-        generationFolder = f"{self.CONFIG_DETAILS['resultsFolder']}\\CMA"
+        generationFolder = f"{self.CONFIG_DETAILS['resultsFolder']}\\CMA\\format_{self.controllerFormat}"
         fullFileList = os.listdir(generationFolder)
         trueFileList = []
         for generationFile in fullFileList:
@@ -859,8 +824,141 @@ class Learner_CMA(Learner):
         except FileNotFoundError:
             return None, None
 
-        
 
+
+class Learner_CMA_Modified(Learner_CMA):
+    # Modification to solve pickling issue with parallelization
+    # TODO: funcs a, b, c, and d raise pickling error
+    # TODO: func makeController raises pickling error
+    def __init__(self,config_details):
+        Learner.__init__(self,config_details)
+
+        self.controllerFormat = 1
+        # # 1: A controller per joint, morphologies share frequencies
+        # # 2: A controller per morphology
+        # # 3: Only one controller 
+
+        generation = self.findGeneration()[0]
+        if generation is None:
+            self.cmaArgs = None
+            self.network = None
+        else:
+            self.cmaArgs = generation.result[0]
+            self.network = self.makeControllers()
+
+        # self.a = lambda x: 24*(x-5) # So it may lock angle to min angle -60 and max angle +60 
+        # self.b = lambda x: 24*x # scale to max angle +-60. Further expanded due all values moving towards 10
+        # self.c = lambda x: 8*x # Previously trained models landed frequency 10
+        # self.d = lambda x: x*(2*np.pi/10) # tau is a full phase
+
+    def a(self, x):
+        return 24*(x-5)
+    def b(self, x):
+        return 24*x
+    def c(self, x):
+        return 8*x
+    def d(self, x):
+        return x*(2*np.pi/10)
+
+    def getBehaviors(self):
+        nagents = 15
+        nbodies = 2
+        behaviorAgentDict = {
+            'gecko_v1?team=0': [0, 3, 5, 7, 8, 12], 
+            'queen_v1?team=0': [1, 2, 4, 6, 9, 10, 11, 13, 14]
+        }
+        return nagents, nbodies, behaviorAgentDict
+
+
+
+
+class Learner_NEAT_From_CMA(Learner_NEAT):
+    def __init__(self,config_details):
+        Learner_NEAT.__init__(self,config_details)
+        self.CONFIG_DETAILS["populationFolder"]+= "\\sineCurriculum"
+        self.learnerCMA = Learner_CMA_Modified(config_details)
+
+
+    def simulateGenome(self, genome, config, env):
+        if isinstance(genome, tuple) and len(genome)==2:
+            genID, gen = genome
+        elif isinstance(genome, neat.genome.DefaultGenome):
+            genID, gen = ("no id", genome)
+        else:
+            raise TypeError(f"genome of unreadable type: {genome}")
+
+        simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
+
+        env.reset()
+
+        networkNEAT = neat.nn.RecurrentNetwork.create(gen, config)
+
+        self.assertBehaviorNames(env)
+        behaviorNames = sorted(list(env.behavior_specs.keys()))
+
+        reward = {behavior:[] for behavior in behaviorNames}
+
+        # networkCMA = {}
+        # for jointstr in self.learnerCMA.network:
+        #     localScope = {}
+        #     exec(self.learnerCMA.network[jointstr], {**globals(), **locals()}, localScope)
+        #     networkCMA[jointstr] = localScope[list(localScope.keys())[0]]
+
+        networkCMA = self.learnerCMA.readControllerStrings(self.learnerCMA.network)
+
+        actionNEATDict = {} # Initial action value
+        for behavior in behaviorNames:
+            decisionSteps, _ = env.get_steps(behavior)
+            for id in decisionSteps.agent_id:
+                jointstr = self.makeJointstr(behavior, id)
+                actionNEATDict[jointstr] = 0
+
+
+        for step in range(simulationSteps):
+            timeVal = step/50 # number of seconds that have passed
+
+            for behavior in behaviorNames:
+                decisionSteps, _ = env.get_steps(behavior)
+
+                behaviorReward = 0
+                for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
+                    jointstr = self.makeJointstr(behavior, id)
+                    
+                    actionCMA  = networkCMA[jointstr](timeVal)
+
+                    obsExpand = np.append(np.array(obs), actionNEATDict[jointstr])
+                    actionNEAT = networkNEAT.activate(obsExpand)
+                    actionNEATDict[jointstr] = actionNEAT
+
+                    behaviorReward += (actionNEAT - actionCMA)**2
+
+                    # pdb.set_trace()
+
+                    action = ActionTuple(
+                        np.array((actionCMA, actionCMA)).reshape(1,2)
+                        )
+                    env.set_action_for_agent(behavior, id, action)
+
+                reward[behavior].append(-np.sqrt(float(behaviorReward)))
+
+                # TODO: How tf to define behavior? 
+                #       Difference in command? X
+                #       Difference in result?
+
+            env.step()
+        env.close()
+
+
+        # for behavior in reward:
+        #     reward[behavior] /= (self.CONFIG_DETAILS.getint("simulationSteps"))
+
+        # Optimization is a maximization where we want minimization, 
+        # and negating reward was simpler than digging through
+        # documentation for a maximization option
+        return self.rewardAggregation(reward)
+
+    def rewardAggregation(self, rewards):
+        return sum([sum(val) for val in rewards.values()])
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-from Learner import Learner, Learner_CMA
+from Learner import Learner_NEAT, Learner_CMA, Learner_NEAT_From_CMA
 import configparser as cfp
 import random
 import multiprocessing as mp
@@ -34,13 +34,21 @@ CONFIG_DETAILS["populationFolder"] = (
 if __name__ == "__main__":
     mp.freeze_support()
 
-    # learner = Learner(CONFIG_DETAILS)
-    # finalGeneration, bestBoi = learner.run(useCheckpoint=True)    
 
-    learner = Learner_CMA(CONFIG_DETAILS)
-    learner.train()
+    mode = 3
 
+    if mode == 1:
+        learner = Learner_NEAT(CONFIG_DETAILS)
+        finalGeneration, bestBoi = learner.run(useCheckpoint=True)    
 
+    elif mode == 2:
+        learner = Learner_CMA(CONFIG_DETAILS)
+        learner.train()
+
+    elif mode == 3:
+        learner = Learner_NEAT_From_CMA(CONFIG_DETAILS)
+        finalGeneration, bestBoi = learner.run(useCheckpoint=True)    
+        # learner.run(useCheckpoint=True)
 
 
 
