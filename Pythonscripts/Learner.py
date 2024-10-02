@@ -72,6 +72,7 @@ class Learner():
 class Learner_NEAT(Learner):
     def __init__(self,config_details):
         Learner.__init__(self,config_details)
+        self.timeConst = 1
         self.NEAT_CONFIG = neat.Config(
             neat.DefaultGenome,
             neat.DefaultReproduction,
@@ -82,7 +83,7 @@ class Learner_NEAT(Learner):
 
     def fitnessFuncTest(self,genome,config):
         _, gen = genome 
-        network = neat.nn.RecurrentNetwork.create(gen, config)
+        network = self.generateNeuralNet(gen, config)
 
         mode = 1
         if mode == 1:
@@ -104,7 +105,7 @@ class Learner_NEAT(Learner):
 
 
         env.reset()
-        network = neat.nn.RecurrentNetwork.create(gen, config)
+        network = self.generateNeuralNet(gen, config)
 
         self.assertBehaviorNames(env)
         behaviorNames = sorted(list(env.behavior_specs.keys()))
@@ -139,9 +140,7 @@ class Learner_NEAT(Learner):
                 
                 for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                     jointstr = self.makeJointstr(behaviorName, id)
-                    # pdb.set_trace()
-                    obsExpand = np.append(np.array(obs), actionDict[jointstr])
-                    action = np.array(network.activate(obsExpand))
+                    action = self.readNeuralNet(network, obs, actionDict[jointstr])
                     actionTu = ActionTuple(
                         np.array((action, action)).reshape(1,2)
                         )
@@ -477,7 +476,35 @@ class Learner_NEAT(Learner):
             config = self.NEAT_CONFIG
         draw_net(config, genome, True)
 
+    def generateNeuralNet(self, gen, config):
+        mode = 3
 
+        if mode == 1:
+            return neat.nn.FeedForward.create(gen, config)
+
+        if mode == 2:
+            return neat.nn.RecurrentNetwork.create(gen, config)
+
+        if mode == 3:
+            timeConst = 1
+            return neat.ctrnn.CTRNN.create(gen, config, timeConst)
+
+    def readNeuralNet(self, network, obs, prevAction=None):
+        mode = 3
+
+        if mode == 1:
+            return network.activate(obs)
+
+        if mode == 2:
+            return network.activate(np.append(np.array(obs), prevAction))
+
+        if mode == 3:
+            return network.advance(
+                np.append(obs, prevAction), 
+                self.timeConst, 
+                self.timeConst,
+                )
+        
 
 
 
@@ -891,7 +918,7 @@ class Learner_NEAT_From_CMA(Learner_NEAT):
 
         env.reset()
 
-        networkNEAT = neat.nn.RecurrentNetwork.create(gen, config)
+        networkNEAT = self.generateNeuralNet(gen, config)
 
         self.assertBehaviorNames(env)
         behaviorNames = sorted(list(env.behavior_specs.keys()))
@@ -926,8 +953,7 @@ class Learner_NEAT_From_CMA(Learner_NEAT):
                     
                     actionCMA  = networkCMA[jointstr](timeVal)
 
-                    obsExpand = np.append(np.array(obs), actionNEATDict[jointstr])
-                    actionNEAT = networkNEAT.activate(obsExpand)
+                    actionNEAT = self.readNeuralNet(networkNEAT, obs, actionNEATDict[jointstr])
                     actionNEATDict[jointstr] = actionNEAT
 
                     behaviorReward += (actionNEAT - actionCMA)**2
@@ -959,6 +985,28 @@ class Learner_NEAT_From_CMA(Learner_NEAT):
 
     def rewardAggregation(self, rewards):
         return sum([sum(val) for val in rewards.values()])
+
+    def fitnessFunc(self,genome,config,queue):
+        # TODO: Overwrites fitnessFunc for testingpurposes; remove when done
+        if isinstance(genome, tuple) and len(genome)==2:
+            genID, gen = genome
+        elif isinstance(genome, neat.genome.DefaultGenome):
+            genID, gen = ("no id", genome)
+        else:
+            raise TypeError(f"genome of unreadable type: {genome}")
+        simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
+
+        reward = 0
+        network = self.generateNeuralNet(gen,config)
+        for step in range(simulationSteps):
+            step/= 50
+            action = self.readNeuralNet(network, [0]*12, 0)
+
+            reward+= (action[0] - np.sin(step))**2
+
+        return -reward
+
+
 
 
 if __name__ == "__main__":
