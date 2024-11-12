@@ -27,6 +27,8 @@ public class Applier : MonoBehaviour {
         foreach (Transform trans in this.transform.GetComponentsInChildren<Transform>()) {
             if (trans.name.EndsWith("_v1")) {
                 v1_roots.Add(trans);
+                trans.position = new Vector3(0,0,0);
+                trans.localScale = new Vector3(1,1,1);
             }
         }
         foreach (Transform v1 in v1_roots) {

@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 from neat.activations import sigmoid_activation
 import random
 
-print()
-
 config = neat.Config(
     neat.DefaultGenome,
     neat.DefaultReproduction,
@@ -136,15 +134,16 @@ def runAndPlot(genome, axis=None, name=None):
 
 def modifyGenome(genome):
     n1, n2 = list(genome.nodes.keys())
+    factor = 1.0
     for node, bias in zip((n1,n2), (-2.75/5, -1.75/5)):
         # genome.nodes[node].aggregation = sum
         # genome.nodes[node].activation = sigmoid_activation
-        genome.nodes[node].bias = bias
+        genome.nodes[node].bias = bias*factor
         genome.nodes[node].response = 1
-    genome.add_connection(config.genome_config, n1, n1, 0.9, True)
-    genome.add_connection(config.genome_config, n1, n2,-0.2, True)
-    genome.add_connection(config.genome_config, n2, n1, 0.2, True)
-    genome.add_connection(config.genome_config, n2, n2, 0.9, True)
+    genome.add_connection(config.genome_config, n1, n1, 0.9*factor, True)
+    genome.add_connection(config.genome_config, n1, n2,-0.2*factor, True)
+    genome.add_connection(config.genome_config, n2, n1, 0.2*factor, True)
+    genome.add_connection(config.genome_config, n2, n2, 0.9*factor, True)
     # genome.add_connection(config.genome_config, n1, 0, 0, True)
     # genome.add_connection(config.genome_config, n2, 0, 1, True)
     # genome.add_connection(config.genome_config, 0, 0, 0, True)
@@ -169,7 +168,7 @@ for genID, genome in list(pop.population.items())[:numberOfSeeds]:
     modifyGenome(genome)
 
 # Constructing final network
-mode = 1
+mode = 2
 # 1: Fully evolved 
 # 2: Fully manual
 # 3: Seeded genome
@@ -246,6 +245,7 @@ else:
     raise NotImplementedError(f"mode {mode} not implemented")
 
 runAndPlot(genome)
+draw_net(config, genome)
 
 # plot(actions, correct)
 # pdb.set_trace()

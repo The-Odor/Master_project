@@ -1000,7 +1000,13 @@ class Learner_NEAT_From_CMA(Learner_NEAT):
         network = self.generateNeuralNet(gen,config)
         for step in range(simulationSteps):
             step/= 50
-            action = self.readNeuralNet(network, [0]*12, 0)
+            # action = self.readNeuralNet(network, [0]*12, 0)
+            action = network.advance(
+                [0]*13, 
+                self.timeConst, 
+                self.timeConst,
+            )
+        
 
             reward+= (action[0] - np.sin(step))**2
 
