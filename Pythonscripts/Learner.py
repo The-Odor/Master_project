@@ -19,8 +19,9 @@ from visualize import draw_net
 import cma
 
 class Learner():
-    def __init__(self, config_details):
+    def __init__(self, config_details, morphologiesToSimulate=None):
         self.CONFIG_DETAILS = config_details
+        self.morphologiesToSimulate = morphologiesToSimulate
 
     def rewardAggregation(self, rewards):
         # Reward for a single behavior is equivalent to final distance
@@ -68,10 +69,13 @@ class Learner():
     def makeJointstr(self, behavior, agentID):
         return behavior + "?agent=" + str(agentID)
 
+    def changeMorphologiesToSimulate(self, newMorphologiesToSimulate):
+        self.morphologiesToSimulate = newMorphologiesToSimulate
+
 
 class Learner_NEAT(Learner):
-    def __init__(self,config_details):
-        Learner.__init__(self,config_details)
+    def __init__(self,config_details, morphologiesToSimulate=None):
+        Learner.__init__(self,config_details, morphologiesToSimulate)
         self.timeConst = 1
         self.NEAT_CONFIG = neat.Config(
             neat.DefaultGenome,
@@ -93,7 +97,7 @@ class Learner_NEAT(Learner):
 
         return fitness
 
-    def simulateGenome(self, genome,config,env,simulationSteps=None):
+    def simulateGenome(self, genome,env,config=None,simulationSteps=None,morphologiesToSimulate=None):
         if simulationSteps is None:
             simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
         if isinstance(genome, tuple) and len(genome)==2:
@@ -102,6 +106,8 @@ class Learner_NEAT(Learner):
             genID, gen = ("no id", genome)
         else:
             raise TypeError(f"genome of unreadable type: {genome}")
+        if config is None:
+            config = self.NEAT_CONFIG
 
 
         env.reset()
@@ -109,8 +115,14 @@ class Learner_NEAT(Learner):
 
         self.assertBehaviorNames(env)
         behaviorNames = sorted(list(env.behavior_specs.keys()))
+        if self.morphologiesToSimulate is None and morphologiesToSimulate is None:
+            morphologiesToSimulate = behaviorNames
+        elif morphologiesToSimulate is None: 
+            morphologiesToSimulate = self.morphologiesToSimulate
+        else:
+            morphologiesToSimulate = morphologiesToSimulate
 
-        reward = {behavior:[] for behavior in behaviorNames}
+        reward = {behavior+"_v1?team=0":[] for behavior in morphologiesToSimulate}
 
         rewardFactor = (self.CONFIG_DETAILS.getint("simulationSteps"))
 
@@ -124,6 +136,8 @@ class Learner_NEAT(Learner):
 
         for step in range(simulationSteps):
             for behaviorName in behaviorNames:
+                if behaviorName[:-10] not in morphologiesToSimulate:
+                    continue
                 decisionSteps, _ = env.get_steps(behaviorName)
                 # observations = []
                 # for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
@@ -170,9 +184,11 @@ class Learner_NEAT(Learner):
         return self.rewardAggregation(reward)
     
 
-    def fitnessFunc(self,genome,config,queue):
+    def fitnessFunc(self,genome,queue,config=None,morphologiesToSimulate=None):
         # return self.fitnessFuncTest(genome,config)
         # return self.approximateSineFunc(genome, config)
+        if config is None:
+            config = self.NEAT_CONFIG
 
         worker_id = queue.get()
     
@@ -193,7 +209,7 @@ class Learner_NEAT(Learner):
             print("Environment found")
 
         env.reset()
-        reward = self.simulateGenome(genome,config,env)
+        reward = self.simulateGenome(genome,env,config,morphologiesToSimulate=morphologiesToSimulate)
 
         queue.put(worker_id)
 
@@ -227,7 +243,7 @@ class Learner_NEAT(Learner):
         if case == 1:
             print(f"Using serial processing")
             for genome in tqdm(genomes, total=len(genomes)-1, bar_format="{l_bar}{bar:20}{r_bar}"):
-                genome[1].fitness = self.fitnessFunc(genome, config,queue)
+                genome[1].fitness = self.fitnessFunc(genome,queue,config)
 
             #case 2:
         elif case == 2:
@@ -235,7 +251,7 @@ class Learner_NEAT(Learner):
             with mp.Pool(numWorkers) as pool:
                 jobs = [pool.apply_async(
                             self.fitnessFunc, 
-                            (genome, config, queue)
+                            (genome, queue, config)
                             ) for genome in genomes]
                     
                 for job, (genID, genome) in zip(jobs, genomes,queue):
@@ -424,7 +440,7 @@ class Learner_NEAT(Learner):
         else:
             raise Exception("Executeable not found")
 
-        reward = self.simulateGenome(genome,config,env)
+        reward = self.simulateGenome(genome,env,config)
 
         if reward > 0:
             print(f"Reward finalized as: {reward}")
@@ -906,7 +922,7 @@ class Learner_NEAT_From_CMA(Learner_NEAT):
         self.learnerCMA = Learner_CMA_Modified(config_details)
 
 
-    def simulateGenome(self, genome, config, env):
+    def simulateGenome(self, genome, env, config):
         if isinstance(genome, tuple) and len(genome)==2:
             genID, gen = genome
         elif isinstance(genome, neat.genome.DefaultGenome):
@@ -986,7 +1002,7 @@ class Learner_NEAT_From_CMA(Learner_NEAT):
     def rewardAggregation(self, rewards):
         return sum([sum(val) for val in rewards.values()])
 
-    def fitnessFunc(self,genome,config,queue):
+    def fitnessFunc(self,genome,queue,config):
         # TODO: Overwrites fitnessFunc for testingpurposes; remove when done
         if isinstance(genome, tuple) and len(genome)==2:
             genID, gen = genome
