@@ -43,9 +43,9 @@ bias_min_value =-30
 # Compatibility options
 compatibility_weight_coefficient = 0.5
 # compatibility_disjoint_coefficient = BOTH disjoint AND excess
-# compatibility_disjoint_coefficient = 1.0 
+compatibility_disjoint_coefficient = 1.0 
 # Scaled for increase in network size
-compatibility_disjoint_coefficient = 0.02 
+; compatibility_disjoint_coefficient = 0.02 
 
 # Connection options
 conn_add_prob = 0.9

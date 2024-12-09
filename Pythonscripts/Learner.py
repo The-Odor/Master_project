@@ -16,12 +16,12 @@ import time
 import datetime
 import os
 from visualize import draw_net
-import cma
+# import cma
 
 class Learner():
-    def __init__(self, config_details, morphologiesToSimulate=None):
+    def __init__(self, config_details, morphologyTrainedOn=None):
         self.CONFIG_DETAILS = config_details
-        self.morphologiesToSimulate = morphologiesToSimulate
+        self.morphologyTrainedOn = morphologyTrainedOn
 
     def rewardAggregation(self, rewards):
         # Reward for a single behavior is equivalent to final distance
@@ -30,6 +30,7 @@ class Learner():
 
         # Different behaviors undergo simple summation
         return sum(rewards.values())
+
     
     def assertBehaviorNames(self, env):
         assert len(list(env.behavior_specs.keys())) != 0,\
@@ -69,13 +70,13 @@ class Learner():
     def makeJointstr(self, behavior, agentID):
         return behavior + "?agent=" + str(agentID)
 
-    def changeMorphologiesToSimulate(self, newMorphologiesToSimulate):
-        self.morphologiesToSimulate = newMorphologiesToSimulate
+    def changemorphologyTrainedOn(self, newmorphologyTrainedOn):
+        self.morphologyTrainedOn = newmorphologyTrainedOn
 
 
 class Learner_NEAT(Learner):
-    def __init__(self,config_details, morphologiesToSimulate=None):
-        Learner.__init__(self,config_details, morphologiesToSimulate)
+    def __init__(self,config_details, morphologyTrainedOn=None):
+        Learner.__init__(self,config_details, morphologyTrainedOn)
         self.timeConst = 1
         self.NEAT_CONFIG = neat.Config(
             neat.DefaultGenome,
@@ -100,7 +101,7 @@ class Learner_NEAT(Learner):
     def simulateGenome(self, genome,env,config=None,simulationSteps=None,morphologiesToSimulate=None):
         if simulationSteps is None:
             simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
-        if isinstance(genome, tuple) and len(genome)==2:
+        if (isinstance(genome, tuple) or isinstance(genome, list)) and len(genome)==2:
             genID, gen = genome
         elif isinstance(genome, neat.genome.DefaultGenome):
             genID, gen = ("no id", genome)
@@ -115,14 +116,13 @@ class Learner_NEAT(Learner):
 
         self.assertBehaviorNames(env)
         behaviorNames = sorted(list(env.behavior_specs.keys()))
-        if self.morphologiesToSimulate is None and morphologiesToSimulate is None:
+        if morphologiesToSimulate is None:
             morphologiesToSimulate = behaviorNames
-        elif morphologiesToSimulate is None: 
-            morphologiesToSimulate = self.morphologiesToSimulate
         else:
             morphologiesToSimulate = morphologiesToSimulate
 
-        reward = {behavior+"_v1?team=0":[] for behavior in morphologiesToSimulate}
+        reward = {behavior:[] for behavior in morphologiesToSimulate}
+        # reward = {behavior+"_v1?team=0":[] for behavior in morphologyTrainedOn}
 
         rewardFactor = (self.CONFIG_DETAILS.getint("simulationSteps"))
 
@@ -136,7 +136,7 @@ class Learner_NEAT(Learner):
 
         for step in range(simulationSteps):
             for behaviorName in behaviorNames:
-                if behaviorName[:-10] not in morphologiesToSimulate:
+                if behaviorName not in morphologiesToSimulate:
                     continue
                 decisionSteps, _ = env.get_steps(behaviorName)
                 # observations = []
@@ -190,7 +190,10 @@ class Learner_NEAT(Learner):
         if config is None:
             config = self.NEAT_CONFIG
 
-        worker_id = queue.get()
+        if self.CONFIG_DETAILS.getint("processingMode") in (2,3):
+            worker_id = queue.get()
+        else:
+            worker_id = 1
     
         # if self.CONFIG_DETAILS.getboolean("exeFilepath"):
         # if self.CONFIG_DETAILS.has_option("Default", "exeFilepath"):
@@ -211,7 +214,8 @@ class Learner_NEAT(Learner):
         env.reset()
         reward = self.simulateGenome(genome,env,config,morphologiesToSimulate=morphologiesToSimulate)
 
-        queue.put(worker_id)
+        if self.CONFIG_DETAILS.getint("processingMode") in (2,3):
+            queue.put(worker_id)
 
         # if reward > 0:
         #     print(f"{reward:.1e}", end=", ")
@@ -222,7 +226,7 @@ class Learner_NEAT(Learner):
 
         return reward
 
-    def evaluatePopulation(self,genomes,config,numWorkers=None):
+    def evaluatePopulation(self,genomes,config,numWorkers=None,training=True):
 
         if numWorkers is None:
             numWorkers = self.CONFIG_DETAILS.getint("parallelWorkers")
@@ -233,9 +237,14 @@ class Learner_NEAT(Learner):
               f" {str(timeNow.second).zfill(2)}."
               f"{timeNow.microsecond}")
 
-        manager = mp.Manager()
-        queue = manager.Queue()
-        [queue.put(i) for i in range(1,25)] # Uses ports 1-24 (0 is for editor)
+        if self.CONFIG_DETAILS.getint("processingMode") in (2,3):
+            manager = mp.Manager()
+            queue = manager.Queue()
+            [queue.put(i) for i in range(1,25)] # Uses ports 1-24 (0 is for editor)
+        else:
+            queue = None
+
+        evaluationDict = {}
         
         case = self.CONFIG_DETAILS.getint("processingMode")
         #match self.CONFIG_DETAILS["processingMode"]:
@@ -243,7 +252,19 @@ class Learner_NEAT(Learner):
         if case == 1:
             print(f"Using serial processing")
             for genome in tqdm(genomes, total=len(genomes)-1, bar_format="{l_bar}{bar:20}{r_bar}"):
-                genome[1].fitness = self.fitnessFunc(genome,queue,config)
+                fitness = self.fitnessFunc(genome,queue,config)
+                if training:
+                    # fitness = fitness[self.morphologyTrainedOn[0]]
+                    # if len(fitness) > 1:
+                    #     raise Exception("Training on more than one morphology, fitness assignment not made for this (should be easy fix if you need it)")
+                    genome[1].fitness = fitness[self.morphologyTrainedOn[0]]#+"_v1?team=0"]
+                else:
+                    for morph in fitness:
+                        if morph in evaluationDict:
+                            evaluationDict[morph].append(fitness[morph])
+                        else:
+                            evaluationDict[morph] = [fitness[morph]]
+
 
             #case 2:
         elif case == 2:
@@ -255,18 +276,27 @@ class Learner_NEAT(Learner):
                             ) for genome in genomes]
                     
                 for job, (genID, genome) in zip(jobs, genomes,queue):
-                    genome.fitness = job.get(timeout=None)
+                    genome.fitness, _ = job.get(timeout=None)
             #case 3:
         elif case == 3:
             print(f"Using imap")
             print("Rewards given: ", end="")
             # self.SimulateGenome prints reward as print(f"{reward:.1e}", end=", ")
             with mp.Pool(numWorkers) as pool:
-                for genome, fitness in zip(genomes, tqdm(pool.imap(
+                for genome, (fitness, morph) in zip(genomes, tqdm(pool.imap(
                         self.fitnessFuncMapper, 
-                        [(genome, config,queue) for genome in genomes]
+                        [(genome,queue,config) for genome in genomes]
                         ), total=len(genomes)-1, bar_format="{l_bar}{bar:20}{r_bar}")):
-                    genome[1].fitness = fitness
+                    if training:
+                        genome[1].fitness = fitness
+                    else:
+                        if morph in evaluationDict:
+                            evaluationDict[morph].append(fitness)
+                        else:
+                            evaluationDict[morph] = [fitness]
+
+
+
                     # The total has to be reduced by 1... for _some_ reason....
 
         elif case == 4:
@@ -276,10 +306,14 @@ class Learner_NEAT(Learner):
 
         # print() # End the rewards printing with \n
 
+        return evaluationDict
+
     def fitnessFuncMapper(self, arg):
         """
-        Wraps self.fitnessFunc to allow single-argument Pool.imap"""
-        return self.fitnessFunc(*arg)
+        Wraps self.fitnessFunc to allow single-argument Pool.imap
+        None is returned to take the place of morphologies-simulated
+        list during non-training for evaluation-purposes"""
+        return self.fitnessFunc(*arg), None
 
     def run(self,config=None, useCheckpoint=False,numGen=None):
         if config is None:
