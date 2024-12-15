@@ -22,6 +22,13 @@ class Learner():
     def __init__(self, config_details, morphologyTrainedOn=None):
         self.CONFIG_DETAILS = config_details
         self.morphologyTrainedOn = morphologyTrainedOn
+        if morphologyTrainedOn:
+            self.CONFIG_DETAILS["populationFolder"] = f"{self.CONFIG_DETAILS['populationFolder']}\\{'_'.join([i[:i.rfind('?team=0')] for i in morphologyTrainedOn])}"
+        print(f"Simulation environment fetched from {self.CONFIG_DETAILS['exeFilepath']}")
+    
+    def switchEnvironment(self, newFilepath):
+        self.CONFIG_DETAILS["exeFilepath"] = newFilepath
+        print(f"New simulation environment now fetched from {self.CONFIG_DETAILS['exeFilepath']}")
 
     def rewardAggregation(self, rewards):
         # Reward for a single behavior is equivalent to final distance
@@ -279,7 +286,7 @@ class Learner_NEAT(Learner):
                     genome.fitness, _ = job.get(timeout=None)
             #case 3:
         elif case == 3:
-            print(f"Using imap")
+            print(f"Using imap with {numWorkers} parallel processes")
             print("Rewards given: ", end="")
             # self.SimulateGenome prints reward as print(f"{reward:.1e}", end=", ")
             with mp.Pool(numWorkers) as pool:
@@ -287,8 +294,9 @@ class Learner_NEAT(Learner):
                         self.fitnessFuncMapper, 
                         [(genome,queue,config) for genome in genomes]
                         ), total=len(genomes)-1, bar_format="{l_bar}{bar:20}{r_bar}")):
+                    # The total has to be reduced by 1... for _some_ reason....
                     if training:
-                        genome[1].fitness = fitness
+                        genome[1].fitness = fitness[self.morphologyTrainedOn[0]]
                     else:
                         if morph in evaluationDict:
                             evaluationDict[morph].append(fitness)
@@ -297,7 +305,6 @@ class Learner_NEAT(Learner):
 
 
 
-                    # The total has to be reduced by 1... for _some_ reason....
 
         elif case == 4:
             print(f"using built-in")
@@ -356,27 +363,39 @@ class Learner_NEAT(Learner):
                             f"met or exceeded: {pop.generation} >= {numGen}")
 
 
+        if pop.generation == numGen-1:
+            # NEATpython does not save the last generation for some reason,
+            # so to avoid running through every single last generation
+            # every damned time, we set the number of generations to be
+            # 1 more than wanted and use this check
+            with open(outfilePath + "\\bestSpecimen", "rb") as infile:
+                bestBoi = pickle.load(infile)
 
-        while pop.generation < numGen:
+        else:
+            while pop.generation < numGen:
 
-            bestBoi = pop.run(
-                self.evaluatePopulation, 
-                self.CONFIG_DETAILS.getint("generationsBeforeSave")
-            )
+                bestBoi = pop.run(
+                    self.evaluatePopulation, 
+                    self.CONFIG_DETAILS.getint("generationsBeforeSave")
+                )
 
-            # outfileName = outfilePath +\
-            #               f"\generation_{str(pop.generation).zfill(4)}.pkl"
-            # with open(outfileName, "wb") as outfile:
-            #     pickle.dump((pop, bestBoi), outfile)
-            #     print(f"Saved generation to {outfileName}")
+                # outfileName = outfilePath +\
+                #               f"\generation_{str(pop.generation).zfill(4)}.pkl"
+                # with open(outfileName, "wb") as outfile:
+                #     pickle.dump((pop, bestBoi), outfile)
+                #     print(f"Saved generation to {outfileName}")
 
-            outfileName = outfilePath + "\\bestSpecimen"
-            with open(outfileName, "wb") as outfile:
-                pickle.dump(bestBoi, outfile)
+                outfileName = outfilePath + "\\bestSpecimen"
+                with open(outfileName, "wb") as outfile:
+                    pickle.dump(bestBoi, outfile)
 
 
 
         return pop, bestBoi
+    
+    def seedingFunction(self, pop):
+        # Placeholder function
+        return pop
     
     def findGeneration(self, specificGeneration = None, config=None):
         if config is None:
@@ -411,7 +430,8 @@ class Learner_NEAT(Learner):
             #     pop = pickle.load(infile)
             #     print(f"Loaded generation from {Generation[0]}\n")
             pop =  neat.checkpoint.Checkpointer.restore_checkpoint(Generation[0])
-                
+            print(f"Restored checkpoint from {Generation[0]}")
+
             # Overwrites old config details
             pop = neat.population.Population(
                 self.NEAT_CONFIG,
@@ -435,7 +455,7 @@ class Learner_NEAT(Learner):
                 filename_prefix=self.CONFIG_DETAILS["populationFolder"]+"\\generation_",
                 ))
 
-            return pop
+            return self.seedingFunction(pop)
 
     def demonstrateGenome(self,genome=None,config=None):
         # raise NotImplemented("top genome no longer saved\n I am sad")
