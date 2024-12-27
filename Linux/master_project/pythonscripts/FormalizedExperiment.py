@@ -5,7 +5,7 @@ import itertools as it
 import copy
 
 # Fetch the config
-configFilepath = "C:\\Users\\theod\\Master_project\\Pythonscripts\\configs\\pythonConfig.config"
+configFilepath = "/fp/homes01/u01/ec-theodoma/master_project/pythonscripts/configs/pythonConfig.config"
 configData = cfp.ConfigParser()
 with open(configFilepath, "r") as infile:
     configData.read_file(infile)
