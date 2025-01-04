@@ -82,7 +82,7 @@ if __name__ == "__main__":
         tmorph = trainedMorphology[:-10]
         index = learner.CONFIG_DETAILS["exeFilepath"].rfind(learner.CONFIG_DETAILS["unityEnvironmentName"])
         newEnvironment = learner.CONFIG_DETAILS["exeFilepath"][:index]
-        newEnvironment+= f"{tmorph}\\{learner.CONFIG_DETAILS['unityEnvironmentName']}.exe"
+        newEnvironment+= f"{tmorph}/{learner.CONFIG_DETAILS['unityEnvironmentName']}{learner.CONFIG_DETAILS['fileendingFormat']}"
         learner.switchEnvironment(newEnvironment)
         # import os
         # index = learner.CONFIG_DETAILS["exeFilepath"].rfind(learner.CONFIG_DETAILS["unityEnvironmentName"])
