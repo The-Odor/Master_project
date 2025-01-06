@@ -4,7 +4,7 @@
 
 ## Parameters
 #SBATCH --account=ec29
-#SBATCH --time=10-0:0:0
+#SBATCH --time=2-0:0:0
 #SBATCH --job-name=mlagents_using_cores_$requested_cores
 #SBATCH --ntasks=1 #only one script
 #SBATCH --cpus-per-task=64
@@ -12,6 +12,7 @@
 
 
 ## Commands
+source venv/bin/activate
 python pythonscripts/FormalizedExperiment.py
 
 

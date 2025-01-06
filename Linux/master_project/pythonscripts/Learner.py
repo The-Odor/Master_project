@@ -22,8 +22,14 @@ class Learner():
     def __init__(self, config_details, morphologyTrainedOn=None):
         self.CONFIG_DETAILS = config_details
         self.morphologyTrainedOn = morphologyTrainedOn
+        if self.CONFIG_DETAILS["fileendingFormat"] == ".x86_64":
+            self.osSystem = "unix"
+            self.dirSeparator = "/"
+        elif self.CONFIG_DETAILS["fileendingFormat"] == ".exe":
+            self.osSystem = "windows"
+            self.dirSeparator = "\\"
         if morphologyTrainedOn:
-            self.CONFIG_DETAILS["populationFolder"] = f"{self.CONFIG_DETAILS['populationFolder']}\\{'_'.join([i[:i.rfind('?team=0')] for i in morphologyTrainedOn])}"
+            self.CONFIG_DETAILS["populationFolder"] = f"{self.CONFIG_DETAILS['populationFolder']}{self.dirSeparator}{'_'.join([i[:i.rfind('?team=0')] for i in morphologyTrainedOn])}"
         print(f"Simulation environment fetched from {self.CONFIG_DETAILS['exeFilepath']}")
     
     def switchEnvironment(self, newFilepath):
@@ -355,7 +361,7 @@ class Learner_NEAT(Learner):
             pop.add_reporter(neat.StdOutReporter(False))
             pop.add_reporter(neat.checkpoint.Checkpointer(
                 generation_interval=1,
-                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+"\\generation_",
+                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+f"{self.dirSeparator}generation_",
                 ))
         
         if numGen == pop.generation:
@@ -368,7 +374,7 @@ class Learner_NEAT(Learner):
             # so to avoid running through every single last generation
             # every damned time, we set the number of generations to be
             # 1 more than wanted and use this check
-            with open(outfilePath + "\\bestSpecimen", "rb") as infile:
+            with open(outfilePath + f"{self.dirSeparator}bestSpecimen", "rb") as infile:
                 bestBoi = pickle.load(infile)
 
         else:
@@ -385,7 +391,7 @@ class Learner_NEAT(Learner):
                 #     pickle.dump((pop, bestBoi), outfile)
                 #     print(f"Saved generation to {outfileName}")
 
-                outfileName = outfilePath + "\\bestSpecimen"
+                outfileName = outfilePath + f"{self.dirSeparator}bestSpecimen"
                 with open(outfileName, "wb") as outfile:
                     pickle.dump(bestBoi, outfile)
 
@@ -441,7 +447,7 @@ class Learner_NEAT(Learner):
             pop.add_reporter(neat.StdOutReporter(False))
             pop.add_reporter(neat.checkpoint.Checkpointer(
                 generation_interval=1,
-                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+"\\generation_",
+                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+f"{self.dirSeparator}generation_",
                 ))
             return pop
 
@@ -452,7 +458,7 @@ class Learner_NEAT(Learner):
             pop.add_reporter(neat.StdOutReporter(False))
             pop.add_reporter(neat.checkpoint.Checkpointer(
                 generation_interval=1,
-                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+"\\generation_",
+                filename_prefix=self.CONFIG_DETAILS["populationFolder"]+f"{self.dirSeparator}generation_",
                 ))
 
             return self.seedingFunction(pop)
@@ -463,7 +469,7 @@ class Learner_NEAT(Learner):
             config = self.NEAT_CONFIG
         if genome is None:
             # _, genome = self.findGeneration()
-            genome = self.CONFIG_DETAILS["populationFolder"] + "\\bestSpecimen"
+            genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
 
         if isinstance(genome, str):
             # Given as filepath
@@ -539,7 +545,7 @@ class Learner_NEAT(Learner):
         # raise NotImplemented("top genome no longer saved\n I am sad")
         if genome is None:
             # _, genome = self.findGeneration()
-            genome = self.CONFIG_DETAILS["populationFolder"] + "\\bestSpecimen"
+            genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
             with open(genome, "rb") as infile:
                 genome = pickle.load(infile)
         if config is None:
@@ -641,7 +647,7 @@ class Learner_CMA(Learner):
             iteration+= 10
             # pdb.set_trace()
             outfileName = self.CONFIG_DETAILS["resultsFolder"]
-            outfileName+= f"\\CMA\\format_{self.controllerFormat}\\iteration_{iteration}"
+            outfileName+= f"{self.dirSeparator}CMA{self.dirSeparator}format_{self.controllerFormat}{self.dirSeparator}iteration_{iteration}"
             with open(outfileName, "wb") as outfile:
                 pickle.dump((es, iteration), outfile)
         print(es.result)
@@ -899,7 +905,7 @@ class Learner_CMA(Learner):
         return -self.rewardAggregation(reward)
     
     def findGeneration(self):
-        generationFolder = f"{self.CONFIG_DETAILS['resultsFolder']}\\CMA\\format_{self.controllerFormat}"
+        generationFolder = f"{self.CONFIG_DETAILS['resultsFolder']}{self.dirSeparator}CMA{self.dirSeparator}format_{self.controllerFormat}"
         fullFileList = os.listdir(generationFolder)
         trueFileList = []
         for generationFile in fullFileList:
@@ -915,7 +921,7 @@ class Learner_CMA(Learner):
                 lastGeneration = genNumber
         
         try:
-            with open(f"{generationFolder}\\iteration_{lastGeneration}", "rb") as infile:
+            with open(f"{generationFolder}{self.dirSeparator}iteration_{lastGeneration}", "rb") as infile:
                 iteration = pickle.load(infile)
             return iteration
         except FileNotFoundError:
@@ -972,7 +978,7 @@ class Learner_CMA_Modified(Learner_CMA):
 class Learner_NEAT_From_CMA(Learner_NEAT):
     def __init__(self,config_details):
         Learner_NEAT.__init__(self,config_details)
-        self.CONFIG_DETAILS["populationFolder"]+= "\\sineCurriculum"
+        self.CONFIG_DETAILS["populationFolder"]+= f"{self.dirSeparator}sineCurriculum"
         self.learnerCMA = Learner_CMA_Modified(config_details)
 
 

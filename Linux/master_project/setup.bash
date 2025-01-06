@@ -2,8 +2,7 @@
 module load Python/3.10.8-GCCcore-12.2.0
 python -m venv venv
 source venv/bin/activate
-git clone https://github.com/Unity-Technologies/ml-agents.git
-pip install ml-agents/ml-agents-envs/
+git clone https://github.com/Unity-Technologies/ml-agents.git ml-agents-github
 ##scp C:\Users\theod\Master_project\Linux\master_project ec-theodoma@fox.educloud.no:/cluster/work/users/ec-theodoma
 
 pip install setuptools==58
@@ -11,8 +10,8 @@ pip install tqdm
 pip install neat
 pip install neat-python
 pip install numpy
-##pip install ml-agents/ml-agents-envs
-##pip install ml-agents/ml-agents
+pip install ml-agents-github/ml-agents-envs/
+pip install ml-agents-github/ml-agents
 ##pip install ml-agents@git+https://github.com/Unity-Technologies/ml-agents/tree/develop/ml-agents
 pip install graphviz
 pip install matplotlib
