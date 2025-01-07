@@ -437,8 +437,8 @@ class Learner_NEAT(Learner):
             # with open(Generation[0], "rb") as infile: 
             #     pop = pickle.load(infile)
             #     print(f"Loaded generation from {Generation[0]}\n")
+            print(f"Restoring checkpoint from {Generation[0]}")
             pop =  neat.checkpoint.Checkpointer.restore_checkpoint(Generation[0])
-            print(f"Restored checkpoint from {Generation[0]}")
 
             # Overwrites old config details
             pop = neat.population.Population(

@@ -7,8 +7,9 @@ git clone https://github.com/Unity-Technologies/ml-agents.git ml-agents-github
 
 pip install setuptools==58
 pip install tqdm
-pip install neat
-pip install neat-python
+##pip install neat
+##pip install neat-python
+pip install git+https://github.com/CodeReclaimers/neat-python.git
 pip install numpy
 pip install ml-agents-github/ml-agents-envs/
 pip install ml-agents-github/ml-agents
