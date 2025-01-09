@@ -355,7 +355,7 @@ class Learner_NEAT(Learner):
             #             f"\popcount{self.CONFIG_DETAILS['populationCount']}_"\
             #             f"simlength{self.CONFIG_DETAILS['simulationSteps']}"
 
-            pop = self.findGeneration()
+            pop, _ = self.findGeneration()
 
 
         if not pop:
@@ -451,7 +451,9 @@ class Learner_NEAT(Learner):
                 generation_interval=1,
                 filename_prefix=self.CONFIG_DETAILS["populationFolder"]+f"{self.dirSeparator}generation_",
                 ))
-            return pop
+            with open(self.CONFIG_DETAILS["populationFolder"] + r"\bestSpecimen", "rb") as infile:
+               bestSpecimen = pickle.load(infile)
+            return pop, bestSpecimen
 
 
                 # return (pop, bestSpecimen)
@@ -463,15 +465,15 @@ class Learner_NEAT(Learner):
                 filename_prefix=self.CONFIG_DETAILS["populationFolder"]+f"{self.dirSeparator}generation_",
                 ))
 
-            return self.seedingFunction(pop)
+            return self.seedingFunction(pop), None
 
     def demonstrateGenome(self,genome=None,config=None):
         # raise NotImplemented("top genome no longer saved\n I am sad")
         if config is None:
             config = self.NEAT_CONFIG
         if genome is None:
-            # _, genome = self.findGeneration()
-            genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
+            _, genome = self.findGeneration()
+            # genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
 
         if isinstance(genome, str):
             # Given as filepath
@@ -511,9 +513,18 @@ class Learner_NEAT(Learner):
 
     def motionTest(self):
         # Applies basic motion for visual evaluation of physical rules
-        print("Please start environment")
-        env = UnityEnvironment()
-        print("Environment found")
+        # print("Please start environment")
+        # env = UnityEnvironment()
+        # print("Environment found")
+        env = UnityEnvironment(
+            file_name=self.CONFIG_DETAILS["exeFilepath"],
+            seed=self.CONFIG_DETAILS.getint("unitySeed"), 
+            side_channels=[], 
+            no_graphics=False,
+            worker_id=1,
+            timeout_wait=self.CONFIG_DETAILS.getint("simulationTimeout"),
+        )
+
 
         env.reset()
 
@@ -522,6 +533,7 @@ class Learner_NEAT(Learner):
         # behaviorName = behaviorNames[0]
 
         motionDuration = 15
+        actionScale = 45
 
         while True:
             for behaviorName in behaviorNames:
@@ -532,7 +544,7 @@ class Learner_NEAT(Learner):
                     action = (1,1)
                 else:
                     action = 2*(T % motionDuration) / motionDuration - 1
-                    action = action/abs(action)
+                    action = action/abs(action) * actionScale
                     action = (action, action)
                 for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                     env.set_action_for_agent(
@@ -540,16 +552,16 @@ class Learner_NEAT(Learner):
                         id, 
                         ActionTuple(np.array(action).reshape(1,2))
                     )
-                    print(f"Sent action {action}")
+                    # print(f"Sent action {action}")
             env.step()
 
     def makePDF(self, genome=None,config=None):
         # raise NotImplemented("top genome no longer saved\n I am sad")
         if genome is None:
-            # _, genome = self.findGeneration()
-            genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
-            with open(genome, "rb") as infile:
-                genome = pickle.load(infile)
+            _, genome = self.findGeneration()
+            # genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
+            # with open(genome, "rb") as infile:
+            #     genome = pickle.load(infile)
         if config is None:
             config = self.NEAT_CONFIG
         draw_net(config, genome, True)
