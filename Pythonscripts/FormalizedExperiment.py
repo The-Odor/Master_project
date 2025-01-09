@@ -25,7 +25,7 @@ CONFIG_DETAILS["populationFolder"] = (
 )
 
 NMORPHOLOGIES = 22
-morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+morphologies = ["gecko", "queen" "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
 # morphologies = morphologies[:6]
 morphologies = [morph + "_v1?team=0" for morph in morphologies]
 EVALUATIONREPETITIONS = 3

@@ -33,6 +33,7 @@ class Learner():
         if morphologyTrainedOn:
             self.CONFIG_DETAILS["populationFolder"] = f"{self.CONFIG_DETAILS['populationFolder']}{self.dirSeparator}{'_'.join([i[:i.rfind('?team=0')] for i in morphologyTrainedOn])}"
         print(f"Simulation environment fetched from {self.CONFIG_DETAILS['exeFilepath']}")
+        self.angleScaler = 60 # Largest angle controllers can output
     
     def switchEnvironment(self, newFilepath):
         self.CONFIG_DETAILS["exeFilepath"] = newFilepath
@@ -169,7 +170,14 @@ class Learner_NEAT(Learner):
                 
                 for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                     jointstr = self.makeJointstr(behaviorName, id)
-                    action = self.readNeuralNet(network, obs, actionDict[jointstr])
+                    action = self.readNeuralNet(network, obs, actionDict[jointstr])[0]
+                    # I thought angle scaling was in the C# script, but 
+                    # apaprently I removed it, and I don't want to compile 
+                    # 46 more times, so it now enters this place.
+                    # Output is sigmoid, in the range [0,1], and I need to 
+                    # transform that to [-angleScaler,angleScaler]
+                    action = action*2 - 1
+                    action*= self.angleScaler 
                     actionTu = ActionTuple(
                         np.array((action, action)).reshape(1,2)
                         )
