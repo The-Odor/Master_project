@@ -11,8 +11,8 @@ if __name__ == "__main__":
     if case == 1:
         # case 1:
         # morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
-        morphologies = ["salamander", "longleg", "gecko", "park", "squarish", "tinlicker"]
-        morphologies = [morph + "_v1?team=0" for morph in morphologies]
+        morphologies = ["queen", "gecko"]
+        morphologies = [morph + "_v1?team=0" for morph in morphologies][1]
         fullEnvironment = CONFIG_DETAILS["exeFilepath"]
         for i,trainedMorphology in enumerate(morphologies):
             print(f"\n\nTraining morphology {i+1} unseeded: {trainedMorphology}".upper())
@@ -37,8 +37,17 @@ if __name__ == "__main__":
     elif case == 2:
         # case 2:
         # Demonstrates simple motion in Unity editor
-        learner = Learner_NEAT(copy.deepcopy(CONFIG_DETAILS))
-        learner.motionTest()
+        # learner = Learner_NEAT(copy.deepcopy(CONFIG_DETAILS))
+        morphologies = ["queen", "gecko"]
+        trainedMorphology = [morph + "_v1?team=0" for morph in morphologies][1]
+        learner = Learner_NEAT(copy.deepcopy(CONFIG_DETAILS), morphologyTrainedOn=[trainedMorphology])
+        tmorph = trainedMorphology[:-10]
+        index = learner.CONFIG_DETAILS["exeFilepath"].rfind(learner.CONFIG_DETAILS["unityEnvironmentName"])
+        newEnvironment = learner.CONFIG_DETAILS["exeFilepath"][:index]
+        newEnvironment+= f"{tmorph}{learner.dirSeparator}{learner.CONFIG_DETAILS['unityEnvironmentName']}{learner.CONFIG_DETAILS['fileendingFormat']}"
+        learner.switchEnvironment(newEnvironment)
+
+        learner.motionTest(useEditor=True)
 
     elif case == 3:
         # case 3:

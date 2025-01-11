@@ -482,6 +482,9 @@ class Learner_NEAT(Learner):
         if genome is None:
             _, genome = self.findGeneration()
             # genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
+        if genome is None:
+            print(f"Cannot demonstrate genome without a bestSpecimen file; failed to find in {self.CONFIG_DETAILS['populationFolder']}")
+            return
 
         if isinstance(genome, str):
             # Given as filepath
@@ -519,19 +522,21 @@ class Learner_NEAT(Learner):
         else:
             print(f"DISC")
 
-    def motionTest(self):
+    def motionTest(self, useEditor=False):
         # Applies basic motion for visual evaluation of physical rules
-        # print("Please start environment")
-        # env = UnityEnvironment()
-        # print("Environment found")
-        env = UnityEnvironment(
-            file_name=self.CONFIG_DETAILS["exeFilepath"],
-            seed=self.CONFIG_DETAILS.getint("unitySeed"), 
-            side_channels=[], 
-            no_graphics=False,
-            worker_id=1,
-            timeout_wait=self.CONFIG_DETAILS.getint("simulationTimeout"),
-        )
+        if useEditor:
+            print("Please start environment")
+            env = UnityEnvironment()
+            print("Environment found")
+        else:
+            env = UnityEnvironment(
+                file_name=self.CONFIG_DETAILS["exeFilepath"],
+                seed=self.CONFIG_DETAILS.getint("unitySeed"), 
+                side_channels=[], 
+                no_graphics=False,
+                worker_id=1,
+                timeout_wait=self.CONFIG_DETAILS.getint("simulationTimeout"),
+            )
 
 
         env.reset()
@@ -541,9 +546,10 @@ class Learner_NEAT(Learner):
         # behaviorName = behaviorNames[0]
 
         motionDuration = 15
-        actionScale = 45
+        actionScale = self.angleScaler
 
-        while True:
+        import keyboard as kb
+        while False in [kb.is_pressed(i) for i in "stop"]:
             for behaviorName in behaviorNames:
                 decisionSteps, other = env.get_steps(behaviorName)
                 T = time.time()
@@ -562,6 +568,7 @@ class Learner_NEAT(Learner):
                     )
                     # print(f"Sent action {action}")
             env.step()
+        env.close()
 
     def makePDF(self, genome=None,config=None):
         # raise NotImplemented("top genome no longer saved\n I am sad")
@@ -572,7 +579,13 @@ class Learner_NEAT(Learner):
             #     genome = pickle.load(infile)
         if config is None:
             config = self.NEAT_CONFIG
-        draw_net(config, genome, True)
+        if genome is None:
+            print(f"Cannot makePDF without a bestSpecimen file; failed to find in {self.CONFIG_DETAILS['populationFolder']}")
+            return
+        # filename = self.CONFIG_DETAILS["populationFolder"][:self.CONFIG_DETAILS["populationFolder"].rfind(self.dirSeparator)] + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
+        # filename = self.CONFIG_DETAILS["populationFolder"] + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
+        filename = self.CONFIG_DETAILS["populationFolder"][:self.CONFIG_DETAILS["populationFolder"].rfind(self.dirSeparator)] + self.dirSeparator + "controllerSVGs" + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
+        draw_net(config, genome, view=True, filename=filename)
 
     def generateNeuralNet(self, gen, config):
         mode = 3
