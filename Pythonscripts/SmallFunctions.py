@@ -7,7 +7,7 @@ def latexifyTable(names, table, horizontlaLimitation=None, verticalLimitation=No
     for section in range(n//horizontlaLimitation):
         j = section*horizontlaLimitation
         k = (section+1)*horizontlaLimitation
-        returnString += "\n"+r"\begin{table}"
+        returnString += "\n"+r"\begin{table}[H]"+"\n"
         returnString += r"\begin"+"{tabular}{l|"+"l"*horizontlaLimitation+"}\n"r"\hline""\n& "
         returnString += " & ".join([name for name in names[j:k]]) + "\\\\ \n \hline\n"
         for i in range(n):

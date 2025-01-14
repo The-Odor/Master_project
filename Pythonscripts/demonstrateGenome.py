@@ -12,7 +12,7 @@ if __name__ == "__main__":
         # case 1:
         # morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
         morphologies = ["queen", "gecko"]
-        morphologies = [morph + "_v1?team=0" for morph in morphologies][1]
+        morphologies = [morph + "_v1?team=0" for morph in morphologies]
         fullEnvironment = CONFIG_DETAILS["exeFilepath"]
         for i,trainedMorphology in enumerate(morphologies):
             print(f"\n\nTraining morphology {i+1} unseeded: {trainedMorphology}".upper())
@@ -52,4 +52,5 @@ if __name__ == "__main__":
     elif case == 3:
         # case 3:
         # Demonstrates cma solution
+        learnerCMA = Learner_CMA
         learnerCMA.demonstrateGenome()

@@ -37,15 +37,38 @@ class FalseQueue():
         pass
 
 class Parallelizable_Learner_NEAT(Learner_NEAT):
+    def __init__(self, config_details, morphologyTrainedOn=None):
+        super().__init__(config_details, morphologyTrainedOn)
+        # Reasoning for punishment magnitude:
+        # A decent fitness level is 2, a dead controller gives a fitness of 
+        # about 1, duration of simulation is 20 seconds, and expected step 
+        # frequency is about twice a second given data from pre-experiments. 
+        # 40 steps thus needs to give less of a punishment than the expoected
+        # reward for a decent walk, so punishment needs to be less than 1/40.
+        # This punishment is reduced from its maximum value to allow decent
+        # walks an actual reward magnitude
+        self.oscillationPunishment = (1/40) / 1024 / 1e100
     # def fitnessFuncMapper(self, arg):
     #     # Fetch simulation targets from queue
     #     morph = queue.get()
     #     return self.fitnessFunc(*arg, morphologiesToSimulate=morph), morph
     def rewardAggregation(self, rewards):
         # Reward for a single behavior is equivalent to final distance
+        modified_reward = {behavior:0 for behavior in rewards}
         for behavior in rewards:
-            rewards[behavior] = rewards[behavior][-1]
-        return rewards
+            for i in range(2, len(rewards[behavior])):
+                sign1 = rewards[behavior][i] - rewards[behavior][i-1]
+                sign2 = rewards[behavior][i-1] - rewards[behavior][i-2]
+
+                # If the two latest differences have different signs (i.e.
+                # the controller has performed an oscillation), give it 
+                # a small penalty, to combat jittering. 0 inclusive;
+                # plateauing counts as an oscillation
+                if sign1*sign2 <= 0:
+                    modified_reward[behavior]-= self.oscillationPunishment
+                
+            modified_reward[behavior]+= rewards[behavior][-1]
+        return modified_reward
 
 
 def seedingFunction(self, pop):
