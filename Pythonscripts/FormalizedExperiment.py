@@ -47,7 +47,7 @@ class Parallelizable_Learner_NEAT(Learner_NEAT):
         # reward for a decent walk, so punishment needs to be less than 1/40.
         # This punishment is reduced from its maximum value to allow decent
         # walks an actual reward magnitude
-        self.oscillationPunishment = (1/40) / 1024 / 1e100
+        self.oscillationPunishment = (1/40) / 4096
     # def fitnessFuncMapper(self, arg):
     #     # Fetch simulation targets from queue
     #     morph = queue.get()
