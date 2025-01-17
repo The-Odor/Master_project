@@ -114,7 +114,7 @@ class Learner_NEAT(Learner):
 
         return fitness
 
-    def simulateGenome(self, genome,env,config=None,simulationSteps=None,morphologiesToSimulate=None):
+    def simulateGenome(self, genome,env,config=None,simulationSteps=None,morphologiesToSimulate=None, returnActions=None):
         if simulationSteps is None:
             simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
         if (isinstance(genome, tuple) or isinstance(genome, list)) and len(genome)==2:
@@ -125,6 +125,10 @@ class Learner_NEAT(Learner):
             raise TypeError(f"genome of unreadable type: {genome}")
         if config is None:
             config = self.NEAT_CONFIG
+        if returnActions is not None:
+            if not isinstance(returnActions, dict):
+                raise NotImplemented("simulateGenome given a non-dict returnActions argument")
+
 
 
         env.reset()
@@ -146,9 +150,10 @@ class Learner_NEAT(Learner):
         for behavior in behaviorNames:
             decisionSteps, _ = env.get_steps(behavior)
             for id in decisionSteps.agent_id:
-
                 actionDict[self.makeJointstr(behavior, id)] = 0
-
+                if returnActions is not None:
+                    returnActions[self.makeJointstr(behavior, id)] = ([], [])
+                    # (sent signal, actual joint angle)
 
         for step in range(simulationSteps):
             for behaviorName in behaviorNames:
@@ -186,6 +191,9 @@ class Learner_NEAT(Learner):
                         actionTu
                     )
                     actionDict[jointstr] = action
+                    if returnActions is not None:
+                        returnActions[jointstr][0].append(action)
+                        returnActions[jointstr][1].append((obs[2])*180/np.pi)
 
 
 
@@ -207,7 +215,7 @@ class Learner_NEAT(Learner):
         return self.rewardAggregation(reward)
     
 
-    def fitnessFunc(self,genome,queue,config=None,morphologiesToSimulate=None):
+    def fitnessFunc(self,genome,queue,config=None,morphologiesToSimulate=None,returnActions=None):
         # return self.fitnessFuncTest(genome,config)
         # return self.approximateSineFunc(genome, config)
         if config is None:
@@ -235,7 +243,11 @@ class Learner_NEAT(Learner):
             print("Environment found")
 
         env.reset()
-        reward = self.simulateGenome(genome,env,config,morphologiesToSimulate=morphologiesToSimulate)
+        reward = self.simulateGenome(
+            genome,env,config,
+            morphologiesToSimulate=morphologiesToSimulate,
+            returnActions=returnActions,
+            )
 
         if self.CONFIG_DETAILS.getint("processingMode") in (2,3):
             queue.put(worker_id)
