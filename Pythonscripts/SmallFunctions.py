@@ -39,6 +39,31 @@ def latexifyExperiment_3(names, table, horizontalLimitation):
     returnString += "\caption{{Fitness values achieved by CMA-evolved controllers for different morphologies}}"
     return returnString
 
+
+def writeBashFiles():
+    destinationFolder = r"C:\Users\theod\Master_project\Linux\master_project"
+    morphologies = ["gecko", "queen" "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+    for morph in morphologies:
+        with open(fr"{destinationFolder}\formalizedExperiment_{morph}", "w") as outfile:
+            outfile.write(f"""#!/bin/bash
+
+# Remember to save with unix line endings
+
+## Parameters
+#SBATCH --account=ec29
+#SBATCH --time=1-0:0:0
+#SBATCH --job-name=mlagents_{morph}
+#SBATCH --ntasks=1 #only one script
+#SBATCH --cpus-per-task=12
+#SBATCH --mem-per-cpu=2200M
+
+
+## Commands
+module load Python/3.10.8-GCCcore-12.2.0
+source venv/bin/activate
+python pythonscripts/FormalizedExperiment.py {morph}
+""")
+
 if __name__ == "__main__":
     import numpy as np
 
