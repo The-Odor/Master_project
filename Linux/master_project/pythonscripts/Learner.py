@@ -28,9 +28,12 @@ class Learner():
         elif self.CONFIG_DETAILS["fileendingFormat"] == ".exe":
             self.osSystem = "windows"
             self.dirSeparator = "\\"
+        else:
+            raise Exception(f"fileendingFormat in pythonconfig not recognized: {self.CONFIG_DETAILS['fileendingFormat']}")
         if morphologyTrainedOn:
             self.CONFIG_DETAILS["populationFolder"] = f"{self.CONFIG_DETAILS['populationFolder']}{self.dirSeparator}{'_'.join([i[:i.rfind('?team=0')] for i in morphologyTrainedOn])}"
         print(f"Simulation environment fetched from {self.CONFIG_DETAILS['exeFilepath']}")
+        self.angleScaler = 60 # Largest angle controllers can output
     
     def switchEnvironment(self, newFilepath):
         self.CONFIG_DETAILS["exeFilepath"] = newFilepath
@@ -90,7 +93,9 @@ class Learner():
 class Learner_NEAT(Learner):
     def __init__(self,config_details, morphologyTrainedOn=None):
         Learner.__init__(self,config_details, morphologyTrainedOn)
-        self.timeConst = 1
+        self.CTRNNtimeConst = 1 # How quickly the network changes per time unit
+        self.CTRNNadvanceTime = 1/100 # How long network should be run for
+        self.CTRNNtimeStep = self.CTRNNadvanceTime # How frequently network should be run within advance_time time
         self.NEAT_CONFIG = neat.Config(
             neat.DefaultGenome,
             neat.DefaultReproduction,
@@ -111,7 +116,7 @@ class Learner_NEAT(Learner):
 
         return fitness
 
-    def simulateGenome(self, genome,env,config=None,simulationSteps=None,morphologiesToSimulate=None):
+    def simulateGenome(self, genome,env,config=None,simulationSteps=None,morphologiesToSimulate=None, returnActions=None):
         if simulationSteps is None:
             simulationSteps = self.CONFIG_DETAILS.getint("simulationSteps")
         if (isinstance(genome, tuple) or isinstance(genome, list)) and len(genome)==2:
@@ -122,6 +127,10 @@ class Learner_NEAT(Learner):
             raise TypeError(f"genome of unreadable type: {genome}")
         if config is None:
             config = self.NEAT_CONFIG
+        if returnActions is not None:
+            if not isinstance(returnActions, dict):
+                raise NotImplemented("simulateGenome given a non-dict returnActions argument")
+
 
 
         env.reset()
@@ -143,9 +152,10 @@ class Learner_NEAT(Learner):
         for behavior in behaviorNames:
             decisionSteps, _ = env.get_steps(behavior)
             for id in decisionSteps.agent_id:
-
                 actionDict[self.makeJointstr(behavior, id)] = 0
-
+                if returnActions is not None:
+                    returnActions[self.makeJointstr(behavior, id)] = ([], [])
+                    # (sent signal, actual joint angle)
 
         for step in range(simulationSteps):
             for behaviorName in behaviorNames:
@@ -167,7 +177,14 @@ class Learner_NEAT(Learner):
                 
                 for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                     jointstr = self.makeJointstr(behaviorName, id)
-                    action = self.readNeuralNet(network, obs, actionDict[jointstr])
+                    action = self.readNeuralNet(network, obs, actionDict[jointstr])[0]
+                    # I thought angle scaling was in the C# script, but 
+                    # apaprently I removed it, and I don't want to compile 
+                    # 46 more times, so it now enters this place.
+                    # Output is sigmoid, in the range [0,1], and I need to 
+                    # transform that to [-angleScaler,angleScaler]
+                    action = action*2 - 1
+                    action*= self.angleScaler 
                     actionTu = ActionTuple(
                         np.array((action, action)).reshape(1,2)
                         )
@@ -176,6 +193,9 @@ class Learner_NEAT(Learner):
                         actionTu
                     )
                     actionDict[jointstr] = action
+                    if returnActions is not None:
+                        returnActions[jointstr][0].append(action)
+                        returnActions[jointstr][1].append((obs[2])*180/np.pi)
 
 
 
@@ -197,7 +217,7 @@ class Learner_NEAT(Learner):
         return self.rewardAggregation(reward)
     
 
-    def fitnessFunc(self,genome,queue,config=None,morphologiesToSimulate=None):
+    def fitnessFunc(self,genome,queue,config=None,morphologiesToSimulate=None,returnActions=None):
         # return self.fitnessFuncTest(genome,config)
         # return self.approximateSineFunc(genome, config)
         if config is None:
@@ -225,7 +245,11 @@ class Learner_NEAT(Learner):
             print("Environment found")
 
         env.reset()
-        reward = self.simulateGenome(genome,env,config,morphologiesToSimulate=morphologiesToSimulate)
+        reward = self.simulateGenome(
+            genome,env,config,
+            morphologiesToSimulate=morphologiesToSimulate,
+            returnActions=returnActions,
+            )
 
         if self.CONFIG_DETAILS.getint("processingMode") in (2,3):
             queue.put(worker_id)
@@ -353,7 +377,7 @@ class Learner_NEAT(Learner):
             #             f"\popcount{self.CONFIG_DETAILS['populationCount']}_"\
             #             f"simlength{self.CONFIG_DETAILS['simulationSteps']}"
 
-            pop = self.findGeneration()
+            pop, _ = self.findGeneration()
 
 
         if not pop:
@@ -435,8 +459,8 @@ class Learner_NEAT(Learner):
             # with open(Generation[0], "rb") as infile: 
             #     pop = pickle.load(infile)
             #     print(f"Loaded generation from {Generation[0]}\n")
+            print(f"Restoring checkpoint from {Generation[0]}")
             pop =  neat.checkpoint.Checkpointer.restore_checkpoint(Generation[0])
-            print(f"Restored checkpoint from {Generation[0]}")
 
             # Overwrites old config details
             pop = neat.population.Population(
@@ -449,7 +473,9 @@ class Learner_NEAT(Learner):
                 generation_interval=1,
                 filename_prefix=self.CONFIG_DETAILS["populationFolder"]+f"{self.dirSeparator}generation_",
                 ))
-            return pop
+            with open(self.CONFIG_DETAILS["populationFolder"] + r"\bestSpecimen", "rb") as infile:
+               bestSpecimen = pickle.load(infile)
+            return pop, bestSpecimen
 
 
                 # return (pop, bestSpecimen)
@@ -461,15 +487,18 @@ class Learner_NEAT(Learner):
                 filename_prefix=self.CONFIG_DETAILS["populationFolder"]+f"{self.dirSeparator}generation_",
                 ))
 
-            return self.seedingFunction(pop)
+            return self.seedingFunction(pop), None
 
     def demonstrateGenome(self,genome=None,config=None):
         # raise NotImplemented("top genome no longer saved\n I am sad")
         if config is None:
             config = self.NEAT_CONFIG
         if genome is None:
-            # _, genome = self.findGeneration()
-            genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
+            _, genome = self.findGeneration()
+            # genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
+        if genome is None:
+            print(f"Cannot demonstrate genome without a bestSpecimen file; failed to find in {self.CONFIG_DETAILS['populationFolder']}")
+            return
 
         if isinstance(genome, str):
             # Given as filepath
@@ -507,11 +536,22 @@ class Learner_NEAT(Learner):
         else:
             print(f"DISC")
 
-    def motionTest(self):
+    def motionTest(self, useEditor=False):
         # Applies basic motion for visual evaluation of physical rules
-        print("Please start environment")
-        env = UnityEnvironment()
-        print("Environment found")
+        if useEditor:
+            print("Please start environment")
+            env = UnityEnvironment()
+            print("Environment found")
+        else:
+            env = UnityEnvironment(
+                file_name=self.CONFIG_DETAILS["exeFilepath"],
+                seed=self.CONFIG_DETAILS.getint("unitySeed"), 
+                side_channels=[], 
+                no_graphics=False,
+                worker_id=1,
+                timeout_wait=self.CONFIG_DETAILS.getint("simulationTimeout"),
+            )
+
 
         env.reset()
 
@@ -520,8 +560,10 @@ class Learner_NEAT(Learner):
         # behaviorName = behaviorNames[0]
 
         motionDuration = 15
+        actionScale = self.angleScaler
 
-        while True:
+        import keyboard as kb
+        while False in [kb.is_pressed(i) for i in "stop"]:
             for behaviorName in behaviorNames:
                 decisionSteps, other = env.get_steps(behaviorName)
                 T = time.time()
@@ -530,7 +572,7 @@ class Learner_NEAT(Learner):
                     action = (1,1)
                 else:
                     action = 2*(T % motionDuration) / motionDuration - 1
-                    action = action/abs(action)
+                    action = action/abs(action) * actionScale
                     action = (action, action)
                 for id, obs in zip(decisionSteps.agent_id, decisionSteps.obs[0]):
                     env.set_action_for_agent(
@@ -538,19 +580,26 @@ class Learner_NEAT(Learner):
                         id, 
                         ActionTuple(np.array(action).reshape(1,2))
                     )
-                    print(f"Sent action {action}")
+                    # print(f"Sent action {action}")
             env.step()
+        env.close()
 
     def makePDF(self, genome=None,config=None):
         # raise NotImplemented("top genome no longer saved\n I am sad")
         if genome is None:
-            # _, genome = self.findGeneration()
-            genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
-            with open(genome, "rb") as infile:
-                genome = pickle.load(infile)
+            _, genome = self.findGeneration()
+            # genome = self.CONFIG_DETAILS["populationFolder"] + f"{self.dirSeparator}bestSpecimen"
+            # with open(genome, "rb") as infile:
+            #     genome = pickle.load(infile)
         if config is None:
             config = self.NEAT_CONFIG
-        draw_net(config, genome, True)
+        if genome is None:
+            print(f"Cannot makePDF without a bestSpecimen file; failed to find in {self.CONFIG_DETAILS['populationFolder']}")
+            return
+        # filename = self.CONFIG_DETAILS["populationFolder"][:self.CONFIG_DETAILS["populationFolder"].rfind(self.dirSeparator)] + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
+        # filename = self.CONFIG_DETAILS["populationFolder"] + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
+        filename = self.CONFIG_DETAILS["populationFolder"][:self.CONFIG_DETAILS["populationFolder"].rfind(self.dirSeparator)] + self.dirSeparator + "controllerSVGs" + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
+        draw_net(config, genome, view=True, filename=filename)
 
     def generateNeuralNet(self, gen, config):
         mode = 3
@@ -562,8 +611,11 @@ class Learner_NEAT(Learner):
             return neat.nn.RecurrentNetwork.create(gen, config)
 
         if mode == 3:
-            timeConst = 1
-            return neat.ctrnn.CTRNN.create(gen, config, timeConst)
+            return neat.ctrnn.CTRNN.create(
+                gen, 
+                config, 
+                self.CTRNNtimeConst 
+            )
 
     def readNeuralNet(self, network, obs, prevAction=None):
         mode = 3
@@ -577,8 +629,8 @@ class Learner_NEAT(Learner):
         if mode == 3:
             return network.advance(
                 np.append(obs, prevAction), 
-                self.timeConst, 
-                self.timeConst,
+                advance_time = self.CTRNNadvanceTime, 
+                time_step = self.CTRNNtimeStep,
                 )
         
 
@@ -1079,8 +1131,8 @@ class Learner_NEAT_From_CMA(Learner_NEAT):
             # action = self.readNeuralNet(network, [0]*12, 0)
             action = network.advance(
                 [0]*13, 
-                self.timeConst, 
-                self.timeConst,
+                advance_time = self.CTRNNadvanceTime, 
+                time_step = self.CTRNNtimeStep,
             )
         
 

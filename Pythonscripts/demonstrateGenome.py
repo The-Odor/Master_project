@@ -3,13 +3,17 @@ import copy
 from FormalizedExperiment import FalseQueue
 import pickle
 import os
+import sys
 
 if __name__ == "__main__":
     # learnerNEAT = Learner_NEAT(CONFIG_DETAILS)
     # learnerCMA = Learner_CMA(CONFIG_DETAILS)
     # learner.demonstrateGenome(learner.findGeneration()[1])
 
-    case = 4
+    if len(sys.argv) == 1:
+        case = 1
+    else:
+        case = int(sys.argv[1])
 
     if case == 1:
         # case 1:
@@ -98,5 +102,7 @@ if __name__ == "__main__":
                     0: "Action sent",
                     1: "Angle recieved",
                 }[intendedOrActual])
+                plt.xlabel("timesteps")
+                plt.ylabel("angle")
                 plt.show()
             print()

@@ -3,6 +3,7 @@ import configparser as cfp
 import multiprocessing as mp
 import itertools as it
 import copy
+import sys
 
 # Fetch the config
 configFilepath = "/fp/homes01/u01/ec-theodoma/master_project/pythonscripts/configs/pythonConfig.config"
@@ -25,7 +26,13 @@ CONFIG_DETAILS["populationFolder"] = (
 )
 
 NMORPHOLOGIES = 22
-morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+morphologies = ["gecko", "queen", "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+if len(sys.argv) > 1:
+    try:
+        morphologies = [morphologies[int(sys.argv[1])]]
+    except ValueError:
+        if sys.argv[1] in morphologies:
+            morphologies = [sys.argv[1]]
 # morphologies = morphologies[:6]
 morphologies = [morph + "_v1?team=0" for morph in morphologies]
 EVALUATIONREPETITIONS = 3
@@ -37,15 +44,39 @@ class FalseQueue():
         pass
 
 class Parallelizable_Learner_NEAT(Learner_NEAT):
+    def __init__(self, config_details, morphologyTrainedOn=None):
+        super().__init__(config_details, morphologyTrainedOn)
+        # Reasoning for punishment magnitude:
+        # A decent fitness level is 2, a dead controller gives a fitness of 
+        # about 1, duration of simulation is 20 seconds, and expected step 
+        # frequency is about twice a second given data from pre-experiments. 
+        # 40 steps thus needs to give less of a punishment than the expoected
+        # reward for a decent walk, so punishment needs to be less than 1/40.
+        # This punishment is reduced from its maximum value to allow decent
+        # walks an actual reward magnitude
+        self.oscillationPunishment = (1/40) / 4096
     # def fitnessFuncMapper(self, arg):
     #     # Fetch simulation targets from queue
     #     morph = queue.get()
     #     return self.fitnessFunc(*arg, morphologiesToSimulate=morph), morph
     def rewardAggregation(self, rewards):
         # Reward for a single behavior is equivalent to final distance
+        modified_reward = {behavior:0 for behavior in rewards}
         for behavior in rewards:
-            rewards[behavior] = rewards[behavior][-1]
-        return rewards
+            for i in range(2, len(rewards[behavior])):
+                break
+                sign1 = rewards[behavior][i] - rewards[behavior][i-1]
+                sign2 = rewards[behavior][i-1] - rewards[behavior][i-2]
+
+                # If the two latest differences have different signs (i.e.
+                # the controller has performed an oscillation), give it 
+                # a small penalty, to combat jittering. 0 inclusive;
+                # plateauing counts as an oscillation
+                if sign1*sign2 <= 0:
+                    modified_reward[behavior]-= self.oscillationPunishment
+                
+            modified_reward[behavior]+= rewards[behavior][-1]
+        return modified_reward
 
 
 def seedingFunction(self, pop):
@@ -97,7 +128,7 @@ if __name__ == "__main__":
 
         # Self-evaluation
         # learner.morphologiesToSimulate = [trainedMorphology]
-        selfScore = learner.fitnessFunc(winner, FalseQueue())
+        # selfScore = learner.fitnessFunc(winner, FalseQueue())
 
         # Evaluation
         manager = mp.Manager()
