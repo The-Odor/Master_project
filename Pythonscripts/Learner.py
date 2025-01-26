@@ -93,7 +93,9 @@ class Learner():
 class Learner_NEAT(Learner):
     def __init__(self,config_details, morphologyTrainedOn=None):
         Learner.__init__(self,config_details, morphologyTrainedOn)
-        self.timeConst = 1
+        self.CTRNNtimeConst = 1 # How quickly the network changes per time unit
+        self.CTRNNadvanceTime = 1/100 # How long network should be run for
+        self.CTRNNtimeStep = self.CTRNNadvanceTime # How frequently network should be run within advance_time time
         self.NEAT_CONFIG = neat.Config(
             neat.DefaultGenome,
             neat.DefaultReproduction,
@@ -609,8 +611,11 @@ class Learner_NEAT(Learner):
             return neat.nn.RecurrentNetwork.create(gen, config)
 
         if mode == 3:
-            timeConst = 1
-            return neat.ctrnn.CTRNN.create(gen, config, timeConst)
+            return neat.ctrnn.CTRNN.create(
+                gen, 
+                config, 
+                self.CTRNNtimeConst 
+            )
 
     def readNeuralNet(self, network, obs, prevAction=None):
         mode = 3
@@ -624,8 +629,8 @@ class Learner_NEAT(Learner):
         if mode == 3:
             return network.advance(
                 np.append(obs, prevAction), 
-                self.timeConst, 
-                self.timeConst,
+                advance_time = self.CTRNNadvanceTime, 
+                time_step = self.CTRNNtimeStep,
                 )
         
 
@@ -1126,8 +1131,8 @@ class Learner_NEAT_From_CMA(Learner_NEAT):
             # action = self.readNeuralNet(network, [0]*12, 0)
             action = network.advance(
                 [0]*13, 
-                self.timeConst, 
-                self.timeConst,
+                advance_time = self.CTRNNadvanceTime, 
+                time_step = self.CTRNNtimeStep,
             )
         
 
