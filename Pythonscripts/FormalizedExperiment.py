@@ -3,6 +3,7 @@ import configparser as cfp
 import multiprocessing as mp
 import itertools as it
 import copy
+import sys
 
 # Fetch the config
 configFilepath = "C:\\Users\\theod\\Master_project\\Pythonscripts\\configs\\pythonConfig.config"
@@ -25,7 +26,13 @@ CONFIG_DETAILS["populationFolder"] = (
 )
 
 NMORPHOLOGIES = 22
-morphologies = ["gecko", "queen" "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+morphologies = ["gecko", "queen", "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+if len(sys.argv) > 1:
+    try:
+        morphologies = [morphologies[int(sys.argv[1])]]
+    except ValueError:
+        if sys.argv[1] in morphologies:
+            morphologies = [sys.argv[1]]
 # morphologies = morphologies[:6]
 morphologies = [morph + "_v1?team=0" for morph in morphologies]
 EVALUATIONREPETITIONS = 3
@@ -57,6 +64,7 @@ class Parallelizable_Learner_NEAT(Learner_NEAT):
         modified_reward = {behavior:0 for behavior in rewards}
         for behavior in rewards:
             for i in range(2, len(rewards[behavior])):
+                break
                 sign1 = rewards[behavior][i] - rewards[behavior][i-1]
                 sign2 = rewards[behavior][i-1] - rewards[behavior][i-2]
 
