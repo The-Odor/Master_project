@@ -41,7 +41,7 @@ def latexifyExperiment_3(names, table, horizontalLimitation):
 
 
 def writeBashFiles():
-    destinationFolder = r"C:\Users\theod\Master_project\Linux\master_project"
+    destinationFolder = r"C:\Users\theod\Master_project\Linux\master_project\FormalizedExperimentBashFiles"
     morphologies = ["gecko", "queen" "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
     for morph in morphologies:
         with open(fr"{destinationFolder}\formalizedExperiment_{morph}", "w") as outfile:
@@ -51,10 +51,10 @@ def writeBashFiles():
 
 ## Parameters
 #SBATCH --account=ec29
-#SBATCH --time=1-0:0:0
+#SBATCH --time=12:0:0
 #SBATCH --job-name=mlagents_{morph}
 #SBATCH --ntasks=1 #only one script
-#SBATCH --cpus-per-task=12
+#SBATCH --cpus-per-task=16
 #SBATCH --mem-per-cpu=2200M
 
 

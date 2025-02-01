@@ -129,7 +129,7 @@ if __name__ == "__main__":
         # Self-evaluation
         # learner.morphologiesToSimulate = [trainedMorphology]
         # selfScore = learner.fitnessFunc(winner, FalseQueue())
-
+        break
         # Evaluation
         manager = mp.Manager()
         queue = manager.Queue()
