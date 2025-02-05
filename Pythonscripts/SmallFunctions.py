@@ -42,7 +42,7 @@ def latexifyExperiment_3(names, table, horizontalLimitation):
 
 def writeBashFiles():
     destinationFolder = r"C:\Users\theod\Master_project\Linux\master_project\FormalizedExperimentBashFiles"
-    morphologies = ["gecko", "queen" "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+    morphologies = ["gecko", "queen", "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
     for morph in morphologies:
         with open(fr"{destinationFolder}\formalizedExperiment_{morph}", "w") as outfile:
             outfile.write(f"""#!/bin/bash

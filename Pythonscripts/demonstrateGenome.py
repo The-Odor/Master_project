@@ -17,8 +17,8 @@ if __name__ == "__main__":
 
     if case == 1:
         # case 1:
-        # morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
-        morphologies = ["queen", "gecko"]
+        morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+        # morphologies = ["queen", "gecko"]
         morphologies = [morph + "_v1?team=0" for morph in morphologies]
         fullEnvironment = CONFIG_DETAILS["exeFilepath"]
         for i,trainedMorphology in enumerate(morphologies):

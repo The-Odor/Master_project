@@ -89,8 +89,8 @@ public class MultimorphAgent : Agent {
         }
 
 
-        UIText = GameObject.Find("UI/Canvas/WindowVersion/Text");
-        if (UIText is null) {throw new Exception("UI not found");}
+        // UIText = GameObject.Find("UI/Canvas/WindowVersion/Text");
+        // if (UIText is null) {throw new Exception("UI not found");}
         
 
         // Fault: These properties are documented, but don't exist
@@ -250,18 +250,18 @@ public class MultimorphAgent : Agent {
         else {Debug.Log("Reward somehow became a NaN??");}
 
         // UI Update section
-        if (this.transform.name.EndsWith("v1_root_link0")) {
-            TMPro.TextMeshProUGUI mText = UIText.GetComponent<TMPro.TextMeshProUGUI>();
-            Vector3 pos = transform.position;
-            float dist = (float)Math.Sqrt(Math.Pow(pos.x,2) + Math.Pow(pos.y,2));
-            string name = this.transform.name;
-            name = name.Substring(0, name.IndexOf("v1_root_link0"));
-            if (this.transform.name == "gecko_v1_root_link0") {
-                mText.text = ""+name + dist;
-            } else {
-                mText.text = mText.text + "\n" + name + dist;
-            }
-        }
+        // if (this.transform.name.EndsWith("v1_root_link0")) {
+        //     TMPro.TextMeshProUGUI mText = UIText.GetComponent<TMPro.TextMeshProUGUI>();
+        //     Vector3 pos = transform.position;
+        //     float dist = (float)Math.Sqrt(Math.Pow(pos.x,2) + Math.Pow(pos.y,2));
+        //     string name = this.transform.name;
+        //     name = name.Substring(0, name.IndexOf("v1_root_link0"));
+        //     if (this.transform.name == "gecko_v1_root_link0") {
+        //         mText.text = ""+name + dist;
+        //     } else {
+        //         mText.text = mText.text + "\n" + name + dist;
+        //     }
+        // }
     }
 
     /// <summary>

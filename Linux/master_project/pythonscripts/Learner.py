@@ -393,7 +393,7 @@ class Learner_NEAT(Learner):
                             f"met or exceeded: {pop.generation} >= {numGen}")
 
 
-        if pop.generation == numGen-1:
+        if pop.generation >= numGen-1:
             # NEATpython does not save the last generation for some reason,
             # so to avoid running through every single last generation
             # every damned time, we set the number of generations to be
@@ -473,7 +473,7 @@ class Learner_NEAT(Learner):
                 generation_interval=1,
                 filename_prefix=self.CONFIG_DETAILS["populationFolder"]+f"{self.dirSeparator}generation_",
                 ))
-            with open(self.CONFIG_DETAILS["populationFolder"] + r"\bestSpecimen", "rb") as infile:
+            with open(self.CONFIG_DETAILS["populationFolder"] + rf"{self.dirSeparator}bestSpecimen", "rb") as infile:
                bestSpecimen = pickle.load(infile)
             return pop, bestSpecimen
 
