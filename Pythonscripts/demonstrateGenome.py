@@ -11,7 +11,7 @@ if __name__ == "__main__":
     # learner.demonstrateGenome(learner.findGeneration()[1])
 
     if len(sys.argv) == 1:
-        case = 1
+        case = 3
     else:
         case = int(sys.argv[1])
 
@@ -59,8 +59,10 @@ if __name__ == "__main__":
     elif case == 3:
         # case 3:
         # Demonstrates cma solution
-        learnerCMA = Learner_CMA
-        learnerCMA.demonstrateGenome()
+        learnerCMA = Learner_CMA(CONFIG_DETAILS)
+        for demonstrable in ["gecko", "queen"]:
+            learnerCMA.switchEnvironment(demonstrable)
+            learnerCMA.demonstrateGenome()
 
     elif case == 4:
         # morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]

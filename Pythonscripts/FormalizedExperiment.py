@@ -4,6 +4,7 @@ import multiprocessing as mp
 import itertools as it
 import copy
 import sys
+import pickle
 
 # Fetch the config
 configFilepath = "C:\\Users\\theod\\Master_project\\Pythonscripts\\configs\\pythonConfig.config"
@@ -25,8 +26,10 @@ CONFIG_DETAILS["populationFolder"] = (
     CONFIG_DETAILS["populationCount"] + CONFIG_DETAILS["populationFolder2"]
 )
 
+scoreDictFilepath = r"C:\Users\theod\Master_project\data and table storage\experimentOneScoreDict"
 NMORPHOLOGIES = 22
 morphologies = ["gecko", "queen", "stingray", "insect", "babya", "spider", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+# NMORPHOLOGIES = 3; morphologies = morphologies[:NMORPHOLOGIES]
 if len(sys.argv) > 1:
     try:
         morphologies = [morphologies[int(sys.argv[1])]]
@@ -96,6 +99,13 @@ def seedingFunction(self, pop):
         genome.add_connection(self.NEAT_CONFIG.genome_config, n2, n1, 0.2*factor, True)
         genome.add_connection(self.NEAT_CONFIG.genome_config, n2, n2, 0.9*factor, True)
 
+def switchEnvironment(learner, trainedMorphology):
+    if trainedMorphology.endswith("_v1?team=0"):
+        trainedMorphology = trainedMorphology[:-10]
+    index = CONFIG_DETAILS["exeFilepath"].rfind(learner.CONFIG_DETAILS["unityEnvironmentName"])
+    newEnvironment = learner.CONFIG_DETAILS["exeFilepath"][:index]
+    newEnvironment+= f"{trainedMorphology}{learner.dirSeparator}{learner.CONFIG_DETAILS['unityEnvironmentName']}{learner.CONFIG_DETAILS['fileendingFormat']}"
+    learner._switchEnvironmentPath(newEnvironment)
 
 
 
@@ -103,18 +113,25 @@ if __name__ == "__main__":
     mp.freeze_support()
 
     ### CTRNN, unseeded, Experiment 1
-    scoreDict = {}
+    try:
+        with open(scoreDictFilepath, "rb") as infile:
+            scoreDict = pickle.load(infile)
+    except FileNotFoundError:
+        scoreDict = {}
     fullEnvironment = CONFIG_DETAILS["exeFilepath"]
     for i,trainedMorphology in enumerate(morphologies):
+        if trainedMorphology in scoreDict:
+            continue
         print(f"\n\nTraining morphology {i+1} unseeded: {trainedMorphology}".upper())
         # Training
         # if not 'winner' in globals():  
         learner = Parallelizable_Learner_NEAT(copy.deepcopy(CONFIG_DETAILS), morphologyTrainedOn=[trainedMorphology])
-        tmorph = trainedMorphology[:-10]
-        index = learner.CONFIG_DETAILS["exeFilepath"].rfind(learner.CONFIG_DETAILS["unityEnvironmentName"])
-        newEnvironment = learner.CONFIG_DETAILS["exeFilepath"][:index]
-        newEnvironment+= f"{tmorph}{learner.dirSeparator}{learner.CONFIG_DETAILS['unityEnvironmentName']}{learner.CONFIG_DETAILS['fileendingFormat']}"
-        learner.switchEnvironment(newEnvironment)
+        # tmorph = trainedMorphology[:-10]
+        # index = learner.CONFIG_DETAILS["exeFilepath"].rfind(learner.CONFIG_DETAILS["unityEnvironmentName"])
+        # newEnvironment = learner.CONFIG_DETAILS["exeFilepath"][:index]
+        # newEnvironment+= f"{tmorph}{learner.dirSeparator}{learner.CONFIG_DETAILS['unityEnvironmentName']}{learner.CONFIG_DETAILS['fileendingFormat']}"
+        # learner._switchEnvironmentPath(newEnvironment)
+        switchEnvironment(learner, trainedMorphology)
         # import os
         # index = learner.CONFIG_DETAILS["exeFilepath"].rfind(learner.CONFIG_DETAILS["unityEnvironmentName"])
         # outfilePath = learner.CONFIG_DETAILS["exeFilepath"][:index]
@@ -129,27 +146,47 @@ if __name__ == "__main__":
         # Self-evaluation
         # learner.morphologiesToSimulate = [trainedMorphology]
         # selfScore = learner.fitnessFunc(winner, FalseQueue())
-        continue
+
         # Evaluation
+        print(f"Evaluating morphology {i+1} unseeded: {trainedMorphology}".upper())
         manager = mp.Manager()
         queue = manager.Queue()
         # nOthersToTest = 4 # 4 gives 7315 evaluations, 5 gives 26334
         # simulations = [queue.put(i) for i in it.combinations(morphologies, r=nOthersToTest)]
 
         # learner.morphologiesToSimulate = morphologies
-        learner.switchEnvironment(fullEnvironment)
-        CONFIG_DETAILS["populationCount"] = "3"#len(simulations)
-        scores = learner.evaluatePopulation([[0,winner]]*EVALUATIONREPETITIONS, learner.NEAT_CONFIG, training=False)
+        individualSimulations = False
+
+        if individualSimulations:
+            scores = {}
+            for testingMorphology in morphologies:
+                CONFIG_DETAILS["populationCount"] = str(EVALUATIONREPETITIONS)#len(simulations)
+                # learner._switchEnvironmentPath(fullEnvironment)
+                switchEnvironment(learner, testingMorphology)
+                score = learner.evaluatePopulation([[0,winner]]*EVALUATIONREPETITIONS, learner.NEAT_CONFIG, training=False)[None]
+                scores[testingMorphology] = [list(s.values())[0] for s in score]
+        else:
+            learner._switchEnvironmentPath(fullEnvironment)
+            CONFIG_DETAILS["populationCount"] = "3"#len(simulations)
+            scores = learner.evaluatePopulation([[0,winner]]*EVALUATIONREPETITIONS, learner.NEAT_CONFIG, training=False)[None]
         
         # Save data TODO
         # print(selfScore, otherScore)
         # print(scoreDict)yhon
+        
         scoreDict[trainedMorphology] = scores
+
+    with open(scoreDictFilepath, "wb") as outfile:
+        pickle.dump(scoreDict, outfile)
 
     tabularDict = {}
     for morph_i, scores in scoreDict.items():
         # scoreDict[morph] = sum(scores)/len(scores)
-        tabularDict[morph_i] = {morph_ii: sum(scores[morph_ii])/len(scores[morph_ii]) for morph_ii in morphologies}
+        tabularDict[morph_i] = {morph_ii: 0 for morph_ii in morphologies}
+        for i in range(EVALUATIONREPETITIONS):
+            for morph_ii, _ in scoreDict.items():
+                # tabularDict[morph_i][morph_ii]+= scores[i][morph_ii]/EVALUATIONREPETITIONS
+                tabularDict[morph_i][morph_ii]+= scores[morph_ii][i]/EVALUATIONREPETITIONS * 10000
 
     tabularList = [["...",] +[i[:-10][:5] for i in morphologies],]
     for morph_i in morphologies:
@@ -173,7 +210,12 @@ if __name__ == "__main__":
 
     ### Sine, Experiment 3
     # Training
-    pass
+    for morph in morphologies:
+        if morph.endswith("_v1?team=0"):
+            morph = morph[:-10]
+        learner = Learner_CMA(copy.deepcopy(CONFIG_DETAILS), morphologyTrainedOn=morph)
+        learner.switchEnvironment(morph)
+        learner.train()
     # Self-evaluation
     pass
     # Other-evaluation

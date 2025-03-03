@@ -16,7 +16,7 @@ import time
 import datetime
 import os
 from visualize import draw_net
-# import cma
+import cma
 
 class Learner():
     def __init__(self, config_details, morphologyTrainedOn=None):
@@ -35,9 +35,17 @@ class Learner():
         print(f"Simulation environment fetched from {self.CONFIG_DETAILS['exeFilepath']}")
         self.angleScaler = 60 # Largest angle controllers can output
     
-    def switchEnvironment(self, newFilepath):
+    def _switchEnvironmentPath(self, newFilepath):
         self.CONFIG_DETAILS["exeFilepath"] = newFilepath
         print(f"New simulation environment now fetched from {self.CONFIG_DETAILS['exeFilepath']}")
+
+    def switchEnvironment(self, trainedMorphology):
+        if trainedMorphology.endswith("_v1?team=0"):
+            trainedMorphology = trainedMorphology[:-10]
+        index = self.CONFIG_DETAILS["exeFilepath"].rfind(f"Builds{self.dirSeparator}" + self.CONFIG_DETAILS["unityEnvironmentVersion"])
+        newEnvironment = self.CONFIG_DETAILS["exeFilepath"][:index] + f"Builds{self.dirSeparator}{self.CONFIG_DETAILS['unityEnvironmentVersion']}{self.dirSeparator}"
+        newEnvironment+= f"{trainedMorphology}{self.dirSeparator}{self.CONFIG_DETAILS['unityEnvironmentName']}{self.CONFIG_DETAILS['fileendingFormat']}"
+        self._switchEnvironmentPath(newEnvironment)
 
     def rewardAggregation(self, rewards):
         # Reward for a single behavior is equivalent to final distance
@@ -222,6 +230,9 @@ class Learner_NEAT(Learner):
         # return self.approximateSineFunc(genome, config)
         if config is None:
             config = self.NEAT_CONFIG
+        
+        if morphologiesToSimulate is None:
+            pass
 
         if self.CONFIG_DETAILS.getint("processingMode") in (2,3):
             worker_id = queue.get()
@@ -262,6 +273,7 @@ class Learner_NEAT(Learner):
         # print(f"genome {genID} sucessfully simulated")
 
         return reward
+
 
     def evaluatePopulation(self,genomes,config,numWorkers=None,training=True):
 
@@ -637,8 +649,8 @@ class Learner_NEAT(Learner):
 
 
 class Learner_CMA(Learner):
-    def __init__(self,config_details):
-        Learner.__init__(self,config_details)
+    def __init__(self,config_details, morphologyTrainedOn=None):
+        Learner.__init__(self,config_details, morphologyTrainedOn=morphologyTrainedOn)
         # Magical numbers to map self.cmaArgs from optimal CMA-range (0-10)*
         # onto optimal joint range (parameter-dependent, see comments)
         # *https://cma-es.github.io/cmaes_sourcecode_page.html#practical
@@ -694,12 +706,16 @@ class Learner_CMA(Learner):
             )
             iteration = 0
 
-        while True:
-            es.optimize(self.simulateGenome, iterations=10)
-            iteration+= 10
+        while iteration<100:
             # pdb.set_trace()
-            outfileName = self.CONFIG_DETAILS["resultsFolder"]
-            outfileName+= f"{self.dirSeparator}CMA{self.dirSeparator}format_{self.controllerFormat}{self.dirSeparator}iteration_{iteration}"
+            print(f"Training CMA on {'all' if self.morphologyTrainedOn is None else self.morphologyTrainedOn}")
+            es.optimize(self.simulateGenome, iterations=10) 
+            iteration+= 10
+            outfileName = self.CONFIG_DETAILS["resultsFolder"]  
+            outfileName+= f"{self.dirSeparator}CMA{self.dirSeparator}"
+            if self.morphologyTrainedOn is not None:
+                outfileName+= f"{self.morphologyTrainedOn}{self.dirSeparator}"
+            outfileName+= f"format_{self.controllerFormat}{self.dirSeparator}iteration_{iteration}"
             with open(outfileName, "wb") as outfile:
                 pickle.dump((es, iteration), outfile)
         print(es.result)
@@ -833,9 +849,8 @@ class Learner_CMA(Learner):
             network = {}
             for behavior in behaviorAgentDict.keys():
                 for agentID in behaviorAgentDict[behavior]:
-                    controllerFuncString=f"""
-                    def controllerFunc(
-                            step, vals={args}
+                    controllerFuncString=f"""def controllerFunc(
+                            step, vals=[{','.join(args.astype(str))}]
                             ):
                         shift, amp, freq, phase = vals
                         result = self.a(shift) + (self.b(amp)
@@ -851,6 +866,7 @@ class Learner_CMA(Learner):
         network = {}
         for jointstr in networkStrings:
             localScope = {}
+            # print(networkStrings[jointstr])
             exec(networkStrings[jointstr], {**globals(), **locals()}, localScope)
             network[jointstr] = localScope[list(localScope.keys())[0]]
         return network
@@ -957,7 +973,10 @@ class Learner_CMA(Learner):
         return -self.rewardAggregation(reward)
     
     def findGeneration(self):
-        generationFolder = f"{self.CONFIG_DETAILS['resultsFolder']}{self.dirSeparator}CMA{self.dirSeparator}format_{self.controllerFormat}"
+        generationFolder = f"{self.CONFIG_DETAILS['resultsFolder']}{self.dirSeparator}CMA{self.dirSeparator}"
+        if self.morphologyTrainedOn is not None:
+            generationFolder+= f"{self.morphologyTrainedOn}{self.dirSeparator}"
+        generationFolder+= f"format_{self.controllerFormat}"
         fullFileList = os.listdir(generationFolder)
         trueFileList = []
         for generationFile in fullFileList:
