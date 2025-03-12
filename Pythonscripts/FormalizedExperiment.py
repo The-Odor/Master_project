@@ -210,12 +210,28 @@ if __name__ == "__main__":
 
     ### Sine, Experiment 3
     # Training
+    # morphologies = morphologies[:2]
+    morphologies = [morph[:-10] if morph.endswith("_v1?team=0") else morph for morph in morphologies]
     for morph in morphologies:
-        if morph.endswith("_v1?team=0"):
-            morph = morph[:-10]
         learner = Learner_CMA(copy.deepcopy(CONFIG_DETAILS), morphologyTrainedOn=morph)
-        learner.switchEnvironment(morph)
+        learner.switchEnvironment(morph)    
         learner.train()
+
+    fitnesses = {}
+    for morph in morphologies:
+        fitnesses[morph] = []
+        for i in range(10,100+1,10):
+            file = fr"C:\Users\theod\Master_project\Populations\CMA\{morph}\format_3\iteration_{i}"
+            with open(file, "rb") as infile:
+                es = pickle.load(infile)[0]
+            fitnesses[morph].extend([-i for i in es.fit.hist[:10]])
+    
+    import matplotlib.pyplot as plt
+    for morph in fitnesses:
+        plt.plot(fitnesses[morph], label=morph)
+    plt.legend()
+    plt.show()
+        
     # Self-evaluation
     pass
     # Other-evaluation
