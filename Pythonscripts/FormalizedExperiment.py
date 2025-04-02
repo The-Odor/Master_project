@@ -1,10 +1,12 @@
 from Learner import Learner_NEAT, Learner_CMA, Learner_NEAT_From_CMA
+import SmallFunctions
 import configparser as cfp
 import multiprocessing as mp
 import itertools as it
 import copy
 import sys
 import pickle
+import pdb
 
 # Fetch the config
 configFilepath = "C:\\Users\\theod\\Master_project\\Pythonscripts\\configs\\pythonConfig.config"
@@ -155,16 +157,18 @@ if __name__ == "__main__":
         # simulations = [queue.put(i) for i in it.combinations(morphologies, r=nOthersToTest)]
 
         # learner.morphologiesToSimulate = morphologies
-        individualSimulations = False
+        individualSimulations = True
 
         if individualSimulations:
             scores = {}
             for testingMorphology in morphologies:
                 CONFIG_DETAILS["populationCount"] = str(EVALUATIONREPETITIONS)#len(simulations)
                 # learner._switchEnvironmentPath(fullEnvironment)
-                switchEnvironment(learner, testingMorphology)
+                learner.switchEnvironment(testingMorphology)
                 score = learner.evaluatePopulation([[0,winner]]*EVALUATIONREPETITIONS, learner.NEAT_CONFIG, training=False)[None]
                 scores[testingMorphology] = [list(s.values())[0] for s in score]
+                print(f"{trainedMorphology} evaluated on {testingMorphology} achieves a score of {sum([list(s.values())[0] for s in score])/EVALUATIONREPETITIONS * 10000}")
+
         else:
             learner._switchEnvironmentPath(fullEnvironment)
             CONFIG_DETAILS["populationCount"] = "3"#len(simulations)
@@ -197,6 +201,10 @@ if __name__ == "__main__":
         tabularList[i][0] = tabularList[i][0][:-10]
     from tabulate import tabulate
     # tabulate([morphologies] + [[morph] + scoreDict[morph] for morph in morphologies])
+    datatable = SmallFunctions.latexifyExperiment_1_2(tabularList[0][1:],[i[1:] for i in tabularList[1:]])
+    with open(r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\experiment1_CTRNN_NEAT.txt", "w") as outfile:
+        outfile.write(datatable)
+    # print(SmallFunctions.latexifyExperiment_1_2(tabularList[0],tabularList[1:]))
     print(tabulate(tabularList[1:], headers=tabularList[0], floatfmt=".1f"))
 
     ### CTRNN, seeded, Experiment 2
@@ -212,31 +220,36 @@ if __name__ == "__main__":
     # Training
     # morphologies = morphologies[:2]
     morphologies = [morph[:-10] if morph.endswith("_v1?team=0") else morph for morph in morphologies]
-    for morph in morphologies:
-        learner = Learner_CMA(copy.deepcopy(CONFIG_DETAILS), morphologyTrainedOn=morph)
-        learner.switchEnvironment(morph)    
-        learner.train()
+    # morphologies = morphologies[-2:]
+    for format in [1,3]:
+        for morph in morphologies:
+            if format in []:
+                continue
+            learner = Learner_CMA(copy.deepcopy(CONFIG_DETAILS), morphologyTrainedOn=morph, morphologyToSimulate=morph, controllerFormat=format)
+            # learner.switchEnvironment(morph)  # now done in __init__ with morphologyToSimulate 
+            learner.train()
 
-    fitnesses = {}
-    for morph in morphologies:
-        fitnesses[morph] = []
-        for i in range(10,100+1,10):
-            file = fr"C:\Users\theod\Master_project\Populations\CMA\{morph}\format_3\iteration_{i}"
-            with open(file, "rb") as infile:
-                es = pickle.load(infile)[0]
-            fitnesses[morph].extend([-i for i in es.fit.hist[:10]])
-    
-    import matplotlib.pyplot as plt
-    for morph in fitnesses:
-        plt.plot(fitnesses[morph], label=morph)
-    plt.legend()
-    plt.show()
+        for morph in morphologies:
+        fitnesses = {}
+            fitnesses[morph] = []
+            for i in range(10,100+1,10):
+                file = fr"C:\Users\theod\Master_project\Populations\CMA\{morph}\format_{format}\iteration_{i}"
+                with open(file, "rb") as infile:
+                    es = pickle.load(infile)[0]
+                    # pdb.set_trace()
+                fitnesses[morph].extend([-i for i in es.fit.hist[:10]])
         
-    # Self-evaluation
-    pass
-    # Other-evaluation
-    pass
-
+        datatable = SmallFunctions.latexifyExperiment_3(names=morphologies, table=[fitnesses[key][-1] for key in fitnesses])
+        with open(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\experiment2_SIN_CMA_format{format}.txt", "w") as outfile:
+            outfile.write(datatable)
+        import matplotlib.pyplot as plt
+        for morph in fitnesses:
+            plt.plot(fitnesses[morph], label=morph)
+        plt.ylabel("Fitness")
+        plt.xlabel("Generation")
+        plt.legend()
+        plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment3_fitness_over_generations_format{format}.pdf", format="pdf")
+        plt.show()
 
 
 

@@ -1,42 +1,74 @@
+import numpy as np
+
 def latexifyExperiment_1_2(names, table, horizontalLimitation=None, verticalLimitation=None):
     if verticalLimitation is not None:
         raise NotImplementedError
-    
+    if horizontalLimitation is None:
+        horizontalLimitation = 11
+    if isinstance(table, list):
+        table = np.asarray(table)
+
     n = len(names)
     returnString="\n\n"
+    returnString += "\n"+r"\begin{table}"+"\n"
     for section in range(n//horizontalLimitation):
         j = section*horizontalLimitation
         k = (section+1)*horizontalLimitation
-        returnString += "\n"+r"\begin{table}[H]"+"\n"
         returnString += r"\begin"+"{tabular}{l|"+"l"*horizontalLimitation+"}\n"r"\hline""\n& "
         returnString += " & ".join([name for name in names[j:k]]) + "\\\\ \n \hline\n"
+        # TODO: implement the following!!
+        # highestValue = table.max() # OR max(table[i,j:k])
+        # highestValue = np.partition(table.flatten(), -2)[-2] # finds second largest
+        highestValue = 5
+        def convertNormalizedToColour(norm):
+
+            a = np.asarray([0xff,0x00,0x33])
+            b = np.asarray([0x55,0x00,0x33])
+            colour = ((a*norm)+((1-norm)*b)).round().astype(int)
+            colour = colour[0]*0x10000 + colour[1]*0x100 + colour[2]*0x1
+            return int(colour)
+        def makeColour(element, highestValue=highestValue):
+            if element >= highestValue:
+                decimalColour = convertNormalizedToColour(1)
+            else:
+                decimalColour = convertNormalizedToColour(element/highestValue)
+            hexColour = str(hex(decimalColour))[2:]
+            hexColour = "0"*(6-len(hexColour)) + hexColour
+            return fr"\textcolor[HTML]{{{hexColour}}}{{{element:.2f}}}"
         for i in range(n):
-            returnString+= f"{names[i]}& "+" & ".join(table[i,j:k].astype("U"))+"\\\\\n"
+            # returnString+= f"{names[i]}& "+" & ".join(np.round(table[i,j:k],2).astype("U"))+"\\\\\n"
+            # returnString+= f"{names[i]}& "+" & ".join([f"{element:.2f}" if j+ii!=i else f"\\textbf{{{element:.2f}}}" for ii, element in enumerate(table[i,j:k])])+"\\\\\n"
+            returnString+= f"{names[i]}& "+" & ".join([f"{makeColour(element)}" if j+ii!=i else f"\\textbf{{{makeColour(element)}}}" for ii, element in enumerate(table[i,j:k])])+"\\\\\n"
 
         returnString += "\n\end{tabular}\n"
-        returnString += "\end{table}"
+    returnString += "\caption{Fitness values achieved by NEAT-evolved CTRNN controllers for different morphologies. Evaluations on self highlighted in bold. Column names are morphologies trained on, row names are morphologies evaluated on. }\n"
+    returnString += "\label{table:neat_CTRNN_fitnesses}"
+    returnString += "\end{table}"
     return returnString
 
 
-def latexifyExperiment_3(names, table, horizontalLimitation):
+def latexifyExperiment_3(names, table, horizontalLimitation=None):
+    if horizontalLimitation is None:
+        horizontalLimitation = 11
+    if isinstance(table, list):
+        table = np.asarray(table)
 
-    returnString = ""
+    returnString = r"\begin{table}"
     
+    n = len(names)
     for section in range(n//horizontalLimitation):
         j = section*horizontalLimitation
         k = (section+1)*horizontalLimitation
         returnString += fr"""
-
-\begin{{table}}[H]
-\begin{{tabular}}{{lllllll}}
+\begin{{tabular}}{{{'l'*(k-j)}}}
 \hline
 {" & ".join(names[j:k])}\\
  \hline
-{" & ".join(table[j:k].astype("U"))}\\
+{" & ".join([f"{element:.2f}" for element in table[j:k]])}\\
 \end{{tabular}}
-\end{{table}}
 """
-    returnString += "\caption{{Fitness values achieved by CMA-evolved controllers for different morphologies}}"
+    returnString+= "\caption{Fitness values achieved by CMA-evolved sine controllers for different morphologies.}\n"
+    returnString+= "\end{table}"
     return returnString
 
 

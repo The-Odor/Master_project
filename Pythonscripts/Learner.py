@@ -454,7 +454,7 @@ class Learner_NEAT(Learner):
         trueFileList = []
         for generationFile in fullFileList:
             generationFolderFile = os.path.join(populationFolder, generationFile)
-            if os.path.isfile(generationFolderFile) and generationFile != "bestSpecimen":
+            if os.path.isfile(generationFolderFile) and generationFile != "bestSpecimen" and generationFile != "actionDict":
                 trueFileList.append(generationFolderFile)
 
         Generation = (None, 0)
@@ -611,7 +611,7 @@ class Learner_NEAT(Learner):
         # filename = self.CONFIG_DETAILS["populationFolder"][:self.CONFIG_DETAILS["populationFolder"].rfind(self.dirSeparator)] + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
         # filename = self.CONFIG_DETAILS["populationFolder"] + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
         filename = self.CONFIG_DETAILS["populationFolder"][:self.CONFIG_DETAILS["populationFolder"].rfind(self.dirSeparator)] + self.dirSeparator + "controllerSVGs" + self.dirSeparator + "_".join([morph[:-10] for morph in self.morphologyTrainedOn])
-        draw_net(config, genome, view=True, filename=filename)
+        draw_net(config, genome, view=True, filename=filename, fmt="pdf")
 
     def generateNeuralNet(self, gen, config):
         mode = 3
@@ -649,7 +649,7 @@ class Learner_NEAT(Learner):
 
 
 class Learner_CMA(Learner):
-    def __init__(self,config_details, morphologyTrainedOn=None):
+    def __init__(self,config_details, morphologyTrainedOn=None, morphologyToSimulate=None, controllerFormat=None):
         Learner.__init__(self,config_details, morphologyTrainedOn=morphologyTrainedOn)
         # Magical numbers to map self.cmaArgs from optimal CMA-range (0-10)*
         # onto optimal joint range (parameter-dependent, see comments)
@@ -663,10 +663,18 @@ class Learner_CMA(Learner):
         self.c = lambda x: 8*x # Previously trained models landed frequency 10
         self.d = lambda x: x*(2*np.pi/10) # tau is a full phase
 
-        self.controllerFormat = 3
-        # 1: A controller per joint, morphologies share frequencies
-        # 2: A controller per morphology
-        # 3: Only one controller 
+        if controllerFormat is None:
+            self.controllerFormat = 3
+            # 1: A controller per joint, morphologies share frequencies
+            # 2: A controller per morphology
+            # 3: Only one controller 
+        else:
+            self.controllerFormat = controllerFormat
+
+        if morphologyToSimulate is None:
+            pass
+        else:
+            self.switchEnvironment(morphologyToSimulate)
 
         generation = self.findGeneration()[0]
         if generation is None:
@@ -675,7 +683,7 @@ class Learner_CMA(Learner):
         else:
             self.cmaArgs = generation.result[0]
             self.network = self.makeControllers()
-        
+
 
 
     def train(self):
@@ -695,9 +703,12 @@ class Learner_CMA(Learner):
                 # "maxiter": 69,
             }
             x0ByFormat = {
-                1: [5,8,7]*nagents + [5]*nbodies, # Indendent controllers that share frequency
-                2: [5,8,7,5]*nbodies, # One controller per body
-                3: [5,8,7,5], # One controller, period
+                1: [0,0,0]*nagents + [0]*nbodies, # Indendent controllers that share frequency
+                2: [0,0,0,0]*nbodies, # One controller per body
+                3: [0,0,0,0], # One controller, period
+                # 1: [5,8,7]*nagents + [5]*nbodies, # Indendent controllers that share frequency
+                # 2: [5,8,7,5]*nbodies, # One controller per body
+                # 3: [5,8,7,5], # One controller, period
             }
             es = cma.CMAEvolutionStrategy(
                 x0=x0ByFormat[self.controllerFormat],
@@ -977,6 +988,9 @@ class Learner_CMA(Learner):
         if self.morphologyTrainedOn is not None:
             generationFolder+= f"{self.morphologyTrainedOn}{self.dirSeparator}"
         generationFolder+= f"format_{self.controllerFormat}"
+        if not os.path.exists(generationFolder):
+            print(f"First time finding generation from {generationFolder}, making new directory there")
+            os.makedirs(generationFolder)
         fullFileList = os.listdir(generationFolder)
         trueFileList = []
         for generationFile in fullFileList:
