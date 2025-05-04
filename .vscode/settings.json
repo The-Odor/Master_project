@@ -53,5 +53,11 @@
         "Temp/":true
     },
     "git.ignoreLimitWarning": true,
-    "python.envFile": "${workspaceFolder}/venv"
+    "python.envFile": "${workspaceFolder}/venv",
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    }
 }

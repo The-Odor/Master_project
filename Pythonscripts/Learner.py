@@ -984,6 +984,7 @@ class Learner_CMA(Learner):
         return -self.rewardAggregation(reward)
     
     def findGeneration(self):
+        # pdb.set_trace()
         generationFolder = f"{self.CONFIG_DETAILS['resultsFolder']}{self.dirSeparator}CMA{self.dirSeparator}"
         if self.morphologyTrainedOn is not None:
             generationFolder+= f"{self.morphologyTrainedOn}{self.dirSeparator}"

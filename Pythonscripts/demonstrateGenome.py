@@ -6,15 +6,28 @@ import os
 import sys
 import matplotlib.pyplot as plt
 
+params = {
+   'axes.labelsize': 11,
+   'font.size': 11,
+   'legend.fontsize': 11,
+   'xtick.labelsize': 11,
+   'ytick.labelsize': 11,
+   'text.usetex': False,
+   'figure.figsize': [4.5, 4.5]
+   }
+plt.rcParams.update(params)
+
 if __name__ == "__main__":
     # learnerNEAT = Learner_NEAT(CONFIG_DETAILS)
     # learnerCMA = Learner_CMA(CONFIG_DETAILS)
     # learner.demonstrateGenome(learner.findGeneration()[1])
 
+    morphologiesImportantToNeat = ["gecko", "queen", "babyb", "tinlicker", "ww", "snake"]
     morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
     # morphologies = ["queen", "gecko"]
+    morphologies = morphologiesImportantToNeat
     if len(sys.argv) == 1:
-        case = 0
+        case = 1
         # case 0: Prints pdf of topology
         # case 1: Demonstrates neat solution
         # case 2: Demonstrates simple motion in Unity editor
@@ -35,6 +48,7 @@ if __name__ == "__main__":
     elif case == 1:
         # case 1:
         # morphologies = ["stingray", "insect", "gecko", "babya", "spider", "queen", "tinlicker", "longleg", "salamander", "park", "squarish", "blokky", "babyb", "snake", "linkin", "ww", "turtle", "penguin", "zappa", "garrix", "ant", "pentapod"]
+        # morphologies = ["spider", "babyb"]
         morphologies = [morph + "_v1?team=0" for morph in morphologies]
         fullEnvironment = CONFIG_DETAILS["exeFilepath"]
         for i,trainedMorphology in enumerate(morphologies):
@@ -74,11 +88,13 @@ if __name__ == "__main__":
     elif case == 3:
         # case 3:
         # Demonstrates cma solution
-        for demonstrable in ["gecko", "queen"]:
-            print(demonstrable)
-            learnerCMA = Learner_CMA(CONFIG_DETAILS, morphologyToSimulate=demonstrable)
-            learnerCMA.switchEnvironment(demonstrable)
-            learnerCMA.demonstrateGenome()
+        # for demonstrable in ["gecko", "queen"]:
+        for format in [3,1]:
+            for demonstrable in morphologies:
+                print(demonstrable, "format is", format)
+                learnerCMA = Learner_CMA(CONFIG_DETAILS, morphologyTrainedOn=demonstrable, morphologyToSimulate=demonstrable, controllerFormat=format)
+                learnerCMA.switchEnvironment(demonstrable)
+                learnerCMA.demonstrateGenome()
 
     elif case == 4:
         # morphologies = ["gecko"]
@@ -117,50 +133,81 @@ if __name__ == "__main__":
             # learner.demonstrateGenome(learner.findGeneration(specificGeneration=69)[1])
 
             if True:
+                fig, axes = plt.subplots(nrows=2, figsize=(11.2,3.9))
                 for intendedOrActual in range(2):
                     for jointname in actions:
                         # actionset is name of joint
-                        plt.plot(actions[jointname][intendedOrActual][:], label=jointname)
+                        axes[intendedOrActual].plot(actions[jointname][intendedOrActual][:], label=jointname)
                     # plt.legend()
-                    plt.title({
-                        0: "Action sent",
-                        1: "Angle recieved",
-                    }[intendedOrActual])
-                    plt.xlabel("timesteps")
-                    plt.ylabel("angle[$\degree$]")
-                    if intendedOrActual == 0:
-                        plt.savefig(fr"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\neat_signals_runtime\neat_signal_waveform_{trainedMorphology[:-len('_v1?team=0')]}.pdf", format="pdf")
-                    elif intendedOrActual == 1:
-                        plt.savefig(fr"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\neat_signals_runtime\neat_joint_waveform_{trainedMorphology[:-len('_v1?team=0')]}.pdf", format="pdf")
-                    plt.close() # Does not permit plt.show()
-                    plt.show()
-                print()
+                    # axes[intendedOrActual].set_title({
+                    #     0: "Action sent",
+                    #     1: "Angle recieved",
+                    # }[intendedOrActual])
+                    axes[intendedOrActual].set_xlabel("timesteps")
+                    axes[intendedOrActual].set_ylabel("angle[$\degree$]")
+                    axes[intendedOrActual].set_ylim(-60,60)
+                    axes[intendedOrActual].set_xlim(0,500)
+                    axes[intendedOrActual].grid()
+                    # if intendedOrActual == 0:
+                    #     plt.savefig(fr"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\neat_signals_runtime\neat_signal_waveform_{trainedMorphology[:-len('_v1?team=0')]}.pdf", format="pdf")
+                    # elif intendedOrActual == 1:
+                    #     plt.savefig(fr"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\neat_signals_runtime\neat_joint_waveform_{trainedMorphology[:-len('_v1?team=0')]}.pdf", format="pdf")
+                    # plt.close() # Does not permit plt.show()
+                
+                fig.savefig(fr"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\neat_signals_runtime\neat_composite_waveform_{trainedMorphology[:-len('_v1?team=0')]}.pdf", format="pdf")
+                plt.clf()
+                # fig.show()
 
-
-        morphologiesImportantToNeat = ["gecko", "queen", "spider", "babyb", "tinlicker", "ww", "snake"]
         for morph in morphologiesImportantToNeat:
             # morph = morph[:-len("_v1?team=0")]
-            filepathSignal = f"figures/neat_signals_runtime/neat_signal_waveform_{morph}.pdf"
-            filepathJoint = f"figures/neat_signals_runtime/neat_joint_waveform_{morph}.pdf"
+            filepathSignal    = f"figures/neat_signals_runtime/neat_signal_waveform_{morph}.pdf"
+            filepathJoint     = f"figures/neat_signals_runtime/neat_joint_waveform_{morph}.pdf"
+            filepathComposite = f"figures/neat_signals_runtime/neat_composite_waveform_{morph}.pdf"
 
 # fig:neat_gecko_signals,fig:neat_queen_signals,fig:neat_spider_signals,fig:neat_babyb_signals,fig:neat_tinlicker_signals,fig:neat_ww_signals,fig:neat_snake_signals,
-
-            print(fr"""\begin{{figure}}
+            usingSubFigures = True
+            usingLatexSubFigures = False
+            if usingSubFigures:
+                print(fr"""\begin{{figure}}
+    \centering
+    \includegraphics[width=\textwidth]{{{filepathComposite}}}
+    \caption[Control signal and joint angles for morphology {morph}]{{Control signal (upper) and joint angles (lower) over the length of a simulation for morphology {morph}.}}
+    \label{{fig:neat_{morph}_signals}}
+\end{{figure}}""")
+                
+            elif usingLatexSubFigures:
+                # \begin{figure}
+                print(fr"""    \begin{{subfigure}}[b]{{\textwidth}}
+        \centering
+        \includegraphics[width=1.2\textwidth]{{{filepathComposite}}}
+        \caption[Control signal and joint angles for morphology {morph}]{{Control signal (upper) and joint angles (lower) over the length of a simulation for morphology {morph}.}}
+        \label{{fig:neat_{morph}_signals}}
+    \end{{subfigure}}
+    \hfill""")
+                # \caption[Control signal and joint angles]{Control signal (a) and joint angles (b) over the length of a simulation for morphology .}
+                # \label{fig:neat_signals}
+                # \end{figure}
+            
+                
+            else:
+                print(fr"""\begin{{figure}}
     \begin{{subfigure}}[b]{{0.5\textwidth}}
         \centering
         \includegraphics[width=\textwidth]{{{filepathSignal}}}
+        \caption{{Signal sent}}
     \end{{subfigure}}
     \hfill
     \begin{{subfigure}}[b]{{0.5\textwidth}}
         \centering
         \includegraphics[width=\textwidth]{{{filepathJoint}}}
+        \caption{{Joint angle measured}}
     \end{{subfigure}}
-    \caption{{Control signal (a) and joint angles (b) over the length of a simulation for morphology {morph}}}
+    \caption[Control signal (a) and joint angles (b) for morphology {morph}]{{Control signal (a) and joint angles (b) over the length of a simulation for morphology {morph}.}}
     \label{{fig:neat_{morph}_signals}}
 \end{{figure}}""")
             
     elif case==5:
-        morphologies = ["gecko", "queen"]
+        # morphologies = ["gecko", "queen"]
         morphologies = [morph + "_v1?team=0" for morph in morphologies]
         for i,trainedMorphology in enumerate(morphologies):
             print(f"\n\nTraining morphology {i+1} unseeded: {trainedMorphology}".upper())
