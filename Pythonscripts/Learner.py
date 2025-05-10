@@ -795,19 +795,43 @@ class Learner_CMA(Learner):
         import matplotlib.pyplot as plt
         reducedActionKeys = [key for key in returnActions] # use for individual plotting
         # reducedActionKeys = [key for key in returnActions if key.startswith("queen")]
-        figure, axis = plt.subplots(1,2)
-        for i in range(2):
-            for action in reducedActionKeys:
-                if action.startswith("queen") or True:
-                    timePoints = [i/50 for i in range(len(returnActions[action][i]))] # 50 steps per second
-                    axis[i].plot(timePoints, returnActions[action][i], label=action)
-            axis[i].set_xlabel("Time [s]")
-            axis[i].set_ylabel("Angle [degrees]")
-        axis[0].set_title("Controller signal sent")
-        axis[1].set_title("Actual joint angle")
-        plt.legend()
-        plt.show()
+        # figure, axis = plt.subplots(1,2)
+        # for i in range(2):
+        #     for action in reducedActionKeys:
+        #         if action.startswith("queen") or True:
+        #             timePoints = [i/50 for i in range(len(returnActions[action][i]))] # 50 steps per second
+        #             axis[i].plot(timePoints, returnActions[action][i], label=action)
+        #     axis[i].set_xlabel("Time [s]")
+        #     axis[i].set_ylabel("Angle [degrees]")
+        # axis[0].set_title("Controller signal sent")
+        # axis[1].set_title("Actual joint angle")
+        # plt.legend()
+        # plt.show()
         # pdb.set_trace()
+
+        if self.controllerFormat==3:
+            fig, axes = plt.subplots(nrows=2, figsize=(11.2,3.9))
+            for intendedOrActual in range(2):
+                for jointname in returnActions:
+                    axes[intendedOrActual].plot(returnActions[jointname][intendedOrActual], label=jointname)
+                axes[intendedOrActual].set_xlabel("timesteps")
+                axes[intendedOrActual].set_ylabel("angle[$\degree$]")
+                # ylimMax = max(
+                #     max(returnActions[jointname][0]),
+                #     max(returnActions[jointname][1]),
+                # )
+                # ylimMin = min(
+                #     min(returnActions[jointname][0]),
+                #     min(returnActions[jointname][1]),
+                # )
+                # axes[intendedOrActual].set_ylim(ylimMin,ylimMax)
+                axes[intendedOrActual].set_xlim(0,500)
+                axes[intendedOrActual].grid()
+            fig.savefig(fr"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\cma_signals_runtime\cma_composite_waveform_{self.morphologyTrainedOn}_format{self.controllerFormat}.pdf", format="pdf")
+            plt.clf()
+            # plt.show()
+
+
 
     def makeControllers(self, cmaArgs=None):
         if cmaArgs is None:
@@ -1006,6 +1030,7 @@ class Learner_CMA(Learner):
             if (genNumber > lastGeneration):
                 lastGeneration = genNumber
         
+        print("trying to open", f"{generationFolder}{self.dirSeparator}iteration_{lastGeneration}")
         try:
             with open(f"{generationFolder}{self.dirSeparator}iteration_{lastGeneration}", "rb") as infile:
                 iteration = pickle.load(infile)

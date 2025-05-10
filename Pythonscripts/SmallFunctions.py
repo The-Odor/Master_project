@@ -80,7 +80,7 @@ def latexifyExperiment_3(names, table, horizontalLimitation=None, format=None):
 {" & ".join([makeColour(i,1) for i in table[j:k]])}\\
 \end{{tabular}}
 """
-    returnString+= fr"\caption[Fitness values achieved by sinusoidal-CMA controllers, using the {'specialized format' if format==1 else 'decentralized format' if format==3 else ''}]{{Fitness values achieved by sinusoidal-CMA controllers for different morphologies, using the {'specialized format' if format==1 else 'decentralized format' if format==3 else ''}.colour-coded based on magnitude from fitness of \framebox(13,13){{\colorbox[HTML]{{ffffff}}{{0}}}} to fitness of \framebox(13,13){{\colorbox[HTML]{{ff9595}}{{1}}}} at most (any fitness value above 1 is set to the colour intensity of 1).}}" + "\n"
+    returnString+= fr"\caption[Fitness values achieved by sinusoidal-CMA controllers, using the {'specialized format' if format==1 else 'generalized format' if format==3 else ''}]{{Fitness values achieved by sinusoidal-CMA controllers for different morphologies, using the {'specialized format' if format==1 else 'generalized format' if format==3 else ''}.colour-coded based on magnitude from fitness of \framebox(13,13){{\colorbox[HTML]{{ffffff}}{{0}}}} to fitness of \framebox(13,13){{\colorbox[HTML]{{ff9595}}{{1}}}} at most (any fitness value above 1 is set to the colour intensity of 1).}}" + "\n"
     returnString+= f"\label{{fig:CMA_data_table_format{format}}}\n"
     returnString+= "\end{table}"
     return returnString

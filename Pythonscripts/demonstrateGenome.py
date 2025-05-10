@@ -96,6 +96,16 @@ if __name__ == "__main__":
                 learnerCMA.switchEnvironment(demonstrable)
                 learnerCMA.demonstrateGenome()
 
+        for format in [3]:
+            for morph in morphologies:
+                filepathComposite = fr"figures/cma_signals_runtime/cma_composite_waveform_{morph}_format{format}.pdf"
+                print(fr"""\begin{{figure}}
+    \centering
+    \includegraphics[width=\textwidth]{{{filepathComposite}}}
+    \caption[Control signal and joint angles for morphology {morph}, sinusoidal-CMA]{{Control signal (upper) and joint angles (lower) over the length of a simulation for morphology {morph}.}}
+    \label{{fig:cma_{morph}_signals}}
+\end{{figure}}""")
+
     elif case == 4:
         # morphologies = ["gecko"]
         morphologies = [morph + "_v1?team=0" for morph in morphologies]
@@ -171,7 +181,7 @@ if __name__ == "__main__":
                 print(fr"""\begin{{figure}}
     \centering
     \includegraphics[width=\textwidth]{{{filepathComposite}}}
-    \caption[Control signal and joint angles for morphology {morph}]{{Control signal (upper) and joint angles (lower) over the length of a simulation for morphology {morph}.}}
+    \caption[Control signal and joint angles for morphology {morph}, CTRNN-NEAT]{{Control signal (upper) and joint angles (lower) over the length of a simulation for morphology {morph}.}}
     \label{{fig:neat_{morph}_signals}}
 \end{{figure}}""")
                 

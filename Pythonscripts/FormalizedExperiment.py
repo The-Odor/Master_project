@@ -10,6 +10,7 @@ import sys
 import pickle
 import pdb
 import os
+tau = 2*np.pi
 
 params = {
    'font.size': 13,
@@ -232,7 +233,7 @@ if __name__ == "__main__":
     with open(fitnessDictFilepath, "rb") as infile:
         neatFitnessDict = pickle.load(infile)
 
-    colourGrouping = {
+    colourGroupingGroups = {
         "gecko_v1?team=0": "blue",
         "snake_v1?team=0": "orange",
         "queen_v1?team=0": "brown",
@@ -252,7 +253,7 @@ if __name__ == "__main__":
                 y1 = [np.percentile(i,15.9)*1000 for i in neatFitnessDict[morph].values()], 
                 # label=morph[:-10],
                 alpha = 0.2,
-                color=colourGrouping[morph],
+                color=colourGroupingGroups[morph],
             )
             # equality = [np.percentile(i,75)*1000 for i in neatFitnessDict[morph].values() if np.percentile(i,75) == np.percentile(i,25)]
             # plt.plot(equality)
@@ -261,7 +262,7 @@ if __name__ == "__main__":
                 range(21),
                 [np.mean(i)*1000 for i in neatFitnessDict[morph].values()], 
                 label=morph[:-10] + " mean",
-                color=colourGrouping[morph],
+                color=colourGroupingGroups[morph],
             )
             
             plt.plot(
@@ -269,7 +270,7 @@ if __name__ == "__main__":
                 [np.max(i)*1000 for i in neatFitnessDict[morph].values()],
                 linestyle="--",
                 label=morph[:-10] + " max",
-                color=colourGrouping[morph],
+                color=colourGroupingGroups[morph],
             )
 
         plt.legend()
@@ -283,11 +284,17 @@ if __name__ == "__main__":
 
     colourGrouping = {
         "gecko_v1?team=0": "blue",
+        "gecko":           "blue",
         "snake_v1?team=0": "orange",
+        "snake":           "orange",
         "queen_v1?team=0": "brown",
+        "queen":           "brown",
         "ww_v1?team=0": "red",
+        "ww":           "red",
         "tinlicker_v1?team=0": "purple",
+        "tinlicker":           "purple",
         "babyb_v1?team=0": "black",
+        "babyb":           "black",
     }
     figInd, axInd = plt.subplots()
     figDif, axDif = plt.subplots()
@@ -319,9 +326,11 @@ if __name__ == "__main__":
     axInd.xaxis.set_major_locator(MaxNLocator(integer=True))
     axInd.set_xlabel("Generations")
     axInd.set_ylabel("Individuals")
+    axInd.grid()
     axDif.xaxis.set_major_locator(MaxNLocator(integer=True))
     axDif.set_xlabel("Generations")
     axDif.set_ylabel("Non-leader individuals")
+    axDif.grid()
     figInd.legend()
     figInd.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment1_species_population_size.pdf", format="pdf")
     figDif.legend()
@@ -367,44 +376,63 @@ if __name__ == "__main__":
                     es = pickle.load(infile)[0]
                 if i == 100:
                     if morph in CMAinclude:
-                        means = es.mean
-                        STDs  = es.stds
+                        # if format==3
+                        #     pdb.set_trace()
+                        means = es.result[0]
+                        STDs  = es.result[6]
                         shiftMeans, ampMeans, phaseMeans = ([],[],[])
                         shiftSTDs, ampSTDs, phaseSTDs = ([],[],[])
                         # pdb.set_trace()
-                        for i in range(len(means)):
-                            if i == len(means)-1:
-                                freqMean = learner.c(means[i]) / 50 # Converting from per time step to Hz
-                                freqSTD  = learner.c(STDs[i]) / 50 # Converting from per time step to Hz
-                                # print(morph, freqMean, freqSTD)
-                            elif i%3 == 0:
-                                shiftMeans.append(learner.a(means[i]))
-                                shiftSTDs.append(12*(STDs[i]))
-                            elif i%3 == 1:
-                                ampMeans.append(learner.b(means[i]))
-                                ampSTDs.append(learner.b(STDs[i]))
-                            elif i%3 == 2:
-                                phaseMeans.append(learner.d(means[i])%(2*np.pi))
-                                phaseSTDs.append(learner.d(STDs[i]))
+                        if format==1:
+                            for i in range(len(means)):
+                                if i == len(means)-1:
+                                    freqMean = learner.c(means[i]) / tau
+                                    freqSTD  = learner.c(STDs[i])  / tau
+                                    # print(morph, freqMean, freqSTD)
+                                elif i%3 == 0:
+                                    shiftMeans.append(learner.a(means[i]))
+                                    shiftSTDs.append(12*(STDs[i])) # learner.a makes it negative
+                                elif i%3 == 1:
+                                    ampMeans.append(learner.b(means[i]))
+                                    ampSTDs.append(learner.b(STDs[i]))
+                                elif i%3 == 2:
+                                    phaseMeans.append(learner.d(means[i])%(2*np.pi))
+                                    phaseSTDs.append(learner.d(STDs[i]))
+                        elif format==3:
+                            a, b, c, d = means
+                            shiftMeans = [learner.a(a)]
+                            ampMeans   = [learner.b(b)]
+                            freqMean  = learner.c(c)/ tau
+                            phaseMeans = [learner.d(d)%(2*np.pi)]
+
+                            a, b, c, d = STDs
+                            shiftSTDs = [12*(a)]
+                            ampSTDs   = [learner.b(b)]
+                            freqSTD  = learner.c(c)/ tau
+                            phaseSTDs = [learner.d(d)]
+
+                            print(morph, shiftMeans, ampMeans, freqMean, phaseMeans)
                         nJoints = len(ampMeans)
-                        axFreqAmp.errorbar(x=[freqMean]*nJoints, y=ampMeans, xerr=[freqSTD]*nJoints, yerr=ampSTDs, fmt="o")
-                        axPhaseShift.errorbar(x=phaseMeans, y=shiftMeans, xerr=phaseSTDs, yerr=shiftSTDs, fmt="o")
+                        axFreqAmp.errorbar(x=[freqMean]*nJoints, y=ampMeans, xerr=[freqSTD]*nJoints, yerr=ampSTDs, fmt="o",label=morph,color=colourGrouping[morph+"_v1?team=0"])
+                        axPhaseShift.errorbar(x=phaseMeans, y=shiftMeans, xerr=phaseSTDs, yerr=shiftSTDs, fmt="o",label=morph,color=colourGrouping[morph+"_v1?team=0"])
 
                 fitnesses[morph].extend([-i for i in es.fit.hist[:10]][::-1])
                     
 
         axFreqAmp.set_xlabel("Frequency")
         axFreqAmp.set_ylabel("Amplitude")
+        axFreqAmp.grid()
         # axFreqAmp.set_title("FreqAmp")
-        # figFreqAmp.legend(CMAinclude)
+        # figFreqAmp.legend()
         figFreqAmp.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\frequency_amplitude_graph_format{format}.pdf", format="pdf")
         axPhaseShift.set_xlabel("Phase")
         axPhaseShift.set_ylabel("Shift")
+        axPhaseShift.grid()
         # y_pi   = y/np.pi
         # unit   = 0.25
         # y_tick = np.arange(-0.5, 0.5+unit, unit)
         # axPhaseShift.set_title("PhaseShift")
-        figPhaseShift.legend(CMAinclude)
+        figPhaseShift.legend()
         figPhaseShift.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\phase_shift_graph_format{format}.pdf", format="pdf")
         # fig.suptitle("TITLE PLACEHOLDER")
         # plt.savefig(r"C:\Users\theod\Downloads\GoFuckYourself")
@@ -421,16 +449,31 @@ if __name__ == "__main__":
         for morph in fitnesses:
             if morph not in CMAinclude:
                 continue
-            plt.plot(fitnesses[morph], label=morph)
+            if morph == "gecko" and format == 1:
+                continue
+            plt.plot(fitnesses[morph], label=morph,color=colourGrouping[morph])
         plt.ylabel("Fitness")
         plt.xlabel("Generation")
         if format == 3:
             plt.legend(ncols=3)
         plt.ylim(0,2.5)
         # plt.title(f"format_{format}")
+        plt.grid()
         plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment3_fitness_over_generations_format{format}.pdf", format="pdf")
         # plt.show()
         plt.clf()
+
+        if format==1:
+            plt.plot(fitnesses["gecko"], label=morph,color=colourGrouping["gecko"])
+            plt.ylabel("Fitness")
+            plt.xlabel("Generation")
+            # plt.ylim(0,2.5)
+            # plt.title(f"format_{format}")
+            plt.grid()
+            plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment3_fitness_over_generations_format{format}_gecko_only.pdf", format="pdf")
+            plt.show()
+            plt.clf()
+
 
 
 
@@ -441,3 +484,84 @@ if __name__ == "__main__":
 
         # pdb.set_trace()
         print()
+
+
+
+    # try:
+    #     with open(scoreDictFilepathCMA, "rb") as infile:
+    #         scoreDict = pickle.load(infile)
+    # except FileNotFoundError:
+    #     scoreDict = {}
+    # fullEnvironment = CONFIG_DETAILS["exeFilepath"]
+    # for i,trainedMorphology in enumerate(morphologies):
+
+    #     if trainedMorphology in scoreDict:
+    #         continue
+    #     print(f"\n\nTraining morphology {i+1} unseeded: {trainedMorphology}".upper())
+    #     # Training
+
+    #     learner = Learner_CMA(
+    #         copy.deepcopy(CONFIG_DETAILS), 
+    #         morphologyTrainedOn=trainedMorphology,
+    #         morphologyToSimulate=trainedMorphology,
+    #     )
+
+    #     # finalGeneration, winner = learner.run(useCheckpoint=True)
+
+    #     # Evaluation
+    #     print(f"Evaluating morphology {i+1} unseeded: {trainedMorphology}".upper())
+    #     # manager = mp.Manager()
+    #     # queue = manager.Queue()
+    #     individualSimulations = True
+
+    #     if individualSimulations:
+    #         scores = {}
+    #         es, _ = learner.findGeneration()
+    #         # pdb.set_trace()
+    #         args = es.mean
+    #         for testingMorphology in morphologies:
+    #             # learner._switchEnvironmentPath(fullEnvironment)
+    #             print(f"Testing sinusoidal-CMA on {testingMorphology} using args from {trainedMorphology}")
+    #             learner.switchEnvironment(testingMorphology)
+    #             score = learner.simulateGenome(cmaArgs = args)
+    #             scores[testingMorphology] = [score]*EVALUATIONREPETITIONS # Just to make it fit a format :))
+    #             print(f"{trainedMorphology} evaluated on {testingMorphology} achieves a score of {score /EVALUATIONREPETITIONS * 10000}")
+
+    #     else:
+    #         raise Exception("Bro why did you change that bool, come on man, I'm trying my best")
+        
+    #     # Save data TODO
+    #     # print(selfScore, otherScore)
+    #     # print(scoreDict)yhon
+        
+    #     scoreDict[trainedMorphology] = scores
+
+    #     with open(scoreDictFilepathCMA, "wb") as outfile:
+    #         pickle.dump(scoreDict, outfile)
+
+    # tabularDict = {}
+    # NEATCTRNNScores = []
+    # for morph_i, scores in scoreDict.items():
+    #     # scoreDict[morph] = sum(scores)/len(scores)
+    #     tabularDict[morph_i] = {morph_ii: 0 for morph_ii in morphologies}
+    #     for i in range(EVALUATIONREPETITIONS):
+    #         for morph_ii, _ in scoreDict.items():
+    #             # tabularDict[morph_i][morph_ii]+= scores[i][morph_ii]/EVALUATIONREPETITIONS
+    #             tabularDict[morph_i][morph_ii]+= scores[morph_ii][i]/EVALUATIONREPETITIONS * 1000
+            
+    #     NEATCTRNNScores.append(tabularDict[morph_i][morph_i])
+
+    # tabularList = [["...",] +[i[:-10][:5] for i in morphologies],]
+    # for morph_i in morphologies:
+    #     tabularList.append([morph_i])
+    #     for morph_ii in morphologies:
+    #         tabularList[-1].append(tabularDict[morph_i][morph_ii])
+    # for i in range(1, len(tabularList[1:])+1):
+    #     tabularList[i][0] = tabularList[i][0][:-10]
+    # from tabulate import tabulate
+    # # tabulate([morphologies] + [[morph] + scoreDict[morph] for morph in morphologies])
+    # datatable = SmallFunctions.latexifyExperiment_1_2(tabularList[0][1:],[i[1:] for i in tabularList[1:]])
+    # with open(r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\experiment2_SIN_CMA_format3.txt", "w") as outfile:
+    #     outfile.write(datatable)
+    # # print(SmallFunctions.latexifyExperiment_1_2(tabularList[0],tabularList[1:]))
+    # print(tabulate(tabularList[1:], headers=tabularList[0], floatfmt=".1f"))
