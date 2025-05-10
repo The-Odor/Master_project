@@ -514,7 +514,7 @@ for frequencyAdjustment in AdjustmentSpace:
     genomeSTDCollectionDict[frequencyAdjustment] = np.std(STDs,axis=1)
     genomeCollectionDict[frequencyAdjustment] = mean / len(genomeCollectionDict[frequencyAdjustment])
 
-for collectionDict in [genomeCollectionDict,genomeSTDCollectionDict]:
+for collectionDict in [genomeCollectionDict]:
     maxinator = []
     for frequencyAdjustment in collectionDict:
         for fitness in collectionDict[frequencyAdjustment]:
@@ -531,15 +531,17 @@ for collectionDict in [genomeCollectionDict,genomeSTDCollectionDict]:
     returnString += r"\backslashbox{$F_a$}{$\tau\times100$} & " + " & ".join([fr"{str(name*100)[:3]}" for name in timeConstSpace]) + "\\\\ \n \hline\n"
     for i,frequencyAdjustment in enumerate(AdjustmentSpace):
         # for ii, genome in enumerate(collectionDict[frequencyAdjustment]):
-        returnString+= f"{frequencyAdjustment}& "+" & ".join([f"{makeColour(element,highestValue)}" for element in [fitness for fitness in collectionDict[frequencyAdjustment]]])+"\\\\\n"
+        returnString+= f"{frequencyAdjustment}& "+" & ".join([f"{makeColour(fitness,highestValue)}{{\\footnotesize\\textcolor[HTML]{{404040}}{{$\pm{std:.2f}$}}}}" for fitness,std in [(fitness, std) for fitness, std in zip(collectionDict[frequencyAdjustment], genomeSTDCollectionDict[frequencyAdjustment])]])+"\\\\\n"
 
     returnString += "\hline\n"
     returnString += "\end{tabular}\n"
-    returnString += r"\caption[Fitness values achieved in secondary experiment]{Fitness values achieved with various time constants adapting to signals of various signals.}" + "\n"
+    returnString += r"\caption[Fitness values achieved in secondary experiment]{Fitness values achieved with various time constants adapting to signals of various signals. Standard deviation included in grey text.}" + "\n"
     returnString += "\label{tab:preexperiment_fitnesses}\n"
     returnString += "\end{table}"
 
-    # with open(r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\preexperiment_fitness_values.txt", "w") as outfile:
-    #     outfile.write(returnString)
+
+    with open(r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\preexperiment_fitness_values.txt", "w") as outfile:
+        outfile.write(returnString)
 
     print(returnString)
+    # print("REMINDER THAT SAVING THE TABLE HAS BEEN FUCKING TURNED OFF IT'S GONE IT'S COMMENTED DON'T ASSUME IT WORKS")
