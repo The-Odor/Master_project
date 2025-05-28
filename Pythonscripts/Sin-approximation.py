@@ -139,12 +139,12 @@ def fitnessFunc(genomes,config, plot=False, savePlot=False, axis=None, name=None
                         printGenome(genome, genomeName=name)
                 if savePlot:
                     figurePath = r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\pre-experiment" + "\\"
-                    if mode == 1:
-                        plt.savefig(figurePath + "preexperiment_fully_evolved.pdf", format="pdf")
-                    if mode == 3:
-                        plt.savefig(figurePath + f"preexperiment_seed_genome_TC_{timeConst:.3f}.pdf", format="pdf")
-                    if mode == 5:
-                        plt.savefig(figurePath + "preexperiment_seeded_evolved.pdf", format="pdf")
+                    # if mode == 1:
+                    #     plt.savefig(figurePath + "preexperiment_fully_evolved.pdf", format="pdf")
+                    # if mode == 3:
+                    #     plt.savefig(figurePath + f"preexperiment_seed_genome_TC_{timeConst:.3f}.pdf", format="pdf")
+                    # if mode == 5:
+                    #     plt.savefig(figurePath + "preexperiment_seeded_evolved.pdf", format="pdf")
                 if showPlot:
                     plt.show()
             else:
@@ -472,7 +472,7 @@ for frequencyAdjustment in AdjustmentSpace:
     plt.plot(goalFunc(frequencyAdjustment*np.arange(simulationSteps)*freq), linewidth=3, color="black")
     plt.legend(ncols=3)
     plt.ylim(0,1)
-    plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\pre-experiment\preexperiment_seeded_evolved_FA_{frequencyAdjustment:.1f}.pdf", format="pdf")
+    # plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\pre-experiment\preexperiment_seeded_evolved_FA_{frequencyAdjustment:.1f}.pdf", format="pdf")
     # plt.show()
     plt.clf()
     
@@ -527,11 +527,19 @@ for collectionDict in [genomeCollectionDict]:
     returnString="\n\n"
     returnString += "\n"+r"\begin{table}"+"\n"
     returnString += "\centering\n"
-    returnString += r"\begin"+"{tabular}{|l|"+"l|"*len(timeConstSpace)+"}\n"r"\hline""\n "
-    returnString += r"\backslashbox{$F_a$}{$\tau\times100$} & " + " & ".join([fr"{str(name*100)[:3]}" for name in timeConstSpace]) + "\\\\ \n \hline\n"
+    returnString += r"\begin"+"{tabular}{|l|"+"l|"*len(AdjustmentSpace)+"}\n"r"\hline""\n "
+    returnString += r"\backslashbox{$\tau\times100$}{$F_a$} & " + " & ".join([fr"{str(name)[:3]}" for name in AdjustmentSpace]) + "\\\\ \n \hline\n"
+    # for i,frequencyAdjustment in enumerate(AdjustmentSpace):
+    #     returnString+= f"{frequencyAdjustment}& "+" & ".join([f"{makeColour(fitness,highestValue)}{{\\footnotesize\\textcolor[HTML]{{404040}}{{$\pm{std:.2f}$}}}}" for fitness,std in [(fitness, std) for fitness, std in zip(collectionDict[frequencyAdjustment], genomeSTDCollectionDict[frequencyAdjustment])]])+"\\\\\n"
+    returnStringAddendum = [str(name*100)[:3] for name in timeConstSpace]
     for i,frequencyAdjustment in enumerate(AdjustmentSpace):
-        # for ii, genome in enumerate(collectionDict[frequencyAdjustment]):
-        returnString+= f"{frequencyAdjustment}& "+" & ".join([f"{makeColour(fitness,highestValue)}{{\\footnotesize\\textcolor[HTML]{{404040}}{{$\pm{std:.2f}$}}}}" for fitness,std in [(fitness, std) for fitness, std in zip(collectionDict[frequencyAdjustment], genomeSTDCollectionDict[frequencyAdjustment])]])+"\\\\\n"
+        for ii, (fitness, std) in enumerate(zip(collectionDict[frequencyAdjustment], genomeSTDCollectionDict[frequencyAdjustment])):
+            returnStringAddendum[ii] += f"& {makeColour(fitness,highestValue)}{{\\footnotesize\\textcolor[HTML]{{404040}}{{$\pm{std:.2f}$}}}}"
+        
+        # returnString+= f"{frequencyAdjustment}& "+" & ".join([f"{makeColour(fitness,highestValue)}{{\\footnotesize\\textcolor[HTML]{{404040}}{{$\pm{std:.2f}$}}}}" for fitness,std in [(fitness, std) for fitness, std in zip(collectionDict[frequencyAdjustment], genomeSTDCollectionDict[frequencyAdjustment])]])+"\\\\\n"
+
+    for string in returnStringAddendum:
+        returnString += string + "\\\\\n"
 
     returnString += "\hline\n"
     returnString += "\end{tabular}\n"
@@ -540,8 +548,9 @@ for collectionDict in [genomeCollectionDict]:
     returnString += "\end{table}"
 
 
-    with open(r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\preexperiment_fitness_values.txt", "w") as outfile:
-        outfile.write(returnString)
+    # with open(r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\preexperiment_fitness_values.txt", "w") as outfile:
+    #     outfile.write(returnString)
+
 
     print(returnString)
-    # print("REMINDER THAT SAVING THE TABLE HAS BEEN FUCKING TURNED OFF IT'S GONE IT'S COMMENTED DON'T ASSUME IT WORKS")
+    print("REMINDER THAT ALL SAVING HAS BEEN FUCKING TURNED OFF IT'S GONE IT'S COMMENTED DON'T ASSUME IT WORKS")

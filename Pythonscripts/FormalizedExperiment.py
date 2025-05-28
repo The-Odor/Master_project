@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from Learner import Learner_NEAT, Learner_CMA, Learner_NEAT_From_CMA
+from matplotlib.ticker import MaxNLocator
 import SmallFunctions
 import configparser as cfp
 import multiprocessing as mp
@@ -224,8 +225,8 @@ if __name__ == "__main__":
     from tabulate import tabulate
     # tabulate([morphologies] + [[morph] + scoreDict[morph] for morph in morphologies])
     datatable = SmallFunctions.latexifyExperiment_1_2(tabularList[0][1:],[i[1:] for i in tabularList[1:]])
-    with open(r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\experiment1_CTRNN_NEAT.txt", "w") as outfile:
-        outfile.write(datatable)
+    # with open(r"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\experiment1_CTRNN_NEAT.txt", "w") as outfile:
+    #     outfile.write(datatable)
     # print(SmallFunctions.latexifyExperiment_1_2(tabularList[0],tabularList[1:]))
     print(tabulate(tabularList[1:], headers=tabularList[0], floatfmt=".1f"))
 
@@ -242,10 +243,11 @@ if __name__ == "__main__":
         "babyb_v1?team=0": "brown",
     }
     for group_i, morphGrouping in enumerate((["gecko", "snake", "queen"], ["ww", "tinlicker", "babyb"])):
+        fig, ax = plt.subplots()
         for morph in morphGrouping:
             morph += "_v1?team=0"
             # data = np.asarray(list(neatFitnessDict[morph].values()))*1000
-            plt.fill_between(
+            ax.fill_between(
                 x = range(21),
                 # y1 = [np.max(i)*1000 for i in neatFitnessDict[morph].values()], 
                 # y2 = [np.min(i)*1000 for i in neatFitnessDict[morph].values()], 
@@ -258,14 +260,14 @@ if __name__ == "__main__":
             # equality = [np.percentile(i,75)*1000 for i in neatFitnessDict[morph].values() if np.percentile(i,75) == np.percentile(i,25)]
             # plt.plot(equality)
 
-            plt.plot(
+            ax.plot(
                 range(21),
                 [np.mean(i)*1000 for i in neatFitnessDict[morph].values()], 
                 label=morph[:-10] + " mean",
                 color=colourGroupingGroups[morph],
             )
             
-            plt.plot(
+            ax.plot(
                 range(21),
                 [np.max(i)*1000 for i in neatFitnessDict[morph].values()],
                 linestyle="--",
@@ -273,12 +275,13 @@ if __name__ == "__main__":
                 color=colourGroupingGroups[morph],
             )
 
-        plt.legend()
-        plt.ylabel("Fitness")
-        plt.xlabel("Generation")
-        plt.grid()
-        plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment1_fitness_over_generations_group_{group_i}.pdf", format="pdf")
-        # plt.show()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.legend(ncols=2)
+        ax.set_ylabel("Fitness")
+        ax.set_xlabel("Generation")
+        ax.grid()
+        fig.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment1_fitness_over_generations_group_{group_i}.pdf", format="pdf")
+        plt.show()
         plt.clf()
 
 
@@ -322,7 +325,6 @@ if __name__ == "__main__":
         axDif.plot(range(20+1),diffSize,label=morph[:-10],color=colourGrouping[morph])
     # axInd.set_xticklabels(axInd.get_xticks().astype(int))
     # axDif.set_xticklabels(axDif.get_xticks().astype(int))
-    from matplotlib.ticker import MaxNLocator
     axInd.xaxis.set_major_locator(MaxNLocator(integer=True))
     axInd.set_xlabel("Generations")
     axInd.set_ylabel("Individuals")
@@ -332,9 +334,9 @@ if __name__ == "__main__":
     axDif.set_ylabel("Non-leader individuals")
     axDif.grid()
     figInd.legend()
-    figInd.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment1_species_population_size.pdf", format="pdf")
+    # figInd.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment1_species_population_size.pdf", format="pdf")
     figDif.legend()
-    figDif.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment1_species_population_difference.pdf", format="pdf")
+    # figDif.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment1_species_population_difference.pdf", format="pdf")
     # plt.show()
     plt.clf()
 
@@ -424,7 +426,7 @@ if __name__ == "__main__":
         axFreqAmp.grid()
         # axFreqAmp.set_title("FreqAmp")
         # figFreqAmp.legend()
-        figFreqAmp.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\frequency_amplitude_graph_format{format}.pdf", format="pdf")
+        # figFreqAmp.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\frequency_amplitude_graph_format{format}.pdf", format="pdf")
         axPhaseShift.set_xlabel("Phase")
         axPhaseShift.set_ylabel("Shift")
         axPhaseShift.grid()
@@ -433,7 +435,7 @@ if __name__ == "__main__":
         # y_tick = np.arange(-0.5, 0.5+unit, unit)
         # axPhaseShift.set_title("PhaseShift")
         figPhaseShift.legend()
-        figPhaseShift.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\phase_shift_graph_format{format}.pdf", format="pdf")
+        # figPhaseShift.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\phase_shift_graph_format{format}.pdf", format="pdf")
         # fig.suptitle("TITLE PLACEHOLDER")
         # plt.savefig(r"C:\Users\theod\Downloads\GoFuckYourself")
         # plt.show()
@@ -443,9 +445,10 @@ if __name__ == "__main__":
 
 
         CMASinusoidalScores = [fitnesses[key][-1] for key in fitnesses]
+        pdb.set_trace()
         datatable = SmallFunctions.latexifyExperiment_3(names=[i[:5] for i in morphologies], table=[fitnesses[key][-1] for key in fitnesses],format=format)
-        with open(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\experiment2_SIN_CMA_format{format}.txt", "w") as outfile:
-            outfile.write(datatable)
+        # with open(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\tables\experiment2_SIN_CMA_format{format}.txt", "w") as outfile:
+        #     outfile.write(datatable)
         for morph in fitnesses:
             if morph not in CMAinclude:
                 continue
@@ -459,7 +462,7 @@ if __name__ == "__main__":
         plt.ylim(0,2.5)
         # plt.title(f"format_{format}")
         plt.grid()
-        plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment3_fitness_over_generations_format{format}.pdf", format="pdf")
+        # plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment3_fitness_over_generations_format{format}.pdf", format="pdf")
         # plt.show()
         plt.clf()
 
@@ -470,7 +473,7 @@ if __name__ == "__main__":
             # plt.ylim(0,2.5)
             # plt.title(f"format_{format}")
             plt.grid()
-            plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment3_fitness_over_generations_format{format}_gecko_only.pdf", format="pdf")
+            # plt.savefig(rf"C:\Users\theod\Documents\Github repositories\Master-thesis\Thesis\figures\experiment3_fitness_over_generations_format{format}_gecko_only.pdf", format="pdf")
             plt.show()
             plt.clf()
 
@@ -565,3 +568,7 @@ if __name__ == "__main__":
     #     outfile.write(datatable)
     # # print(SmallFunctions.latexifyExperiment_1_2(tabularList[0],tabularList[1:]))
     # print(tabulate(tabularList[1:], headers=tabularList[0], floatfmt=".1f"))
+
+
+
+    print("REMINDER THAT ALL SAVING HAS BEEN FUCKING TURNED OFF IT'S GONE IT'S COMMENTED DON'T ASSUME IT WORKS")
